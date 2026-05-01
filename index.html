@@ -7,14 +7,13 @@
     <style>
         :root {
             --paper-bg: #fdfaf5;
-            --user-accent: #a63d40; /* 尹昀晞：緋紅色 */
+            --user-accent: #a63d40; /* 尹昀晞對話：緋紅色 */
             --action-color: #8b7d6b; /* 動作描述：咖啡色 */
         }
 
         body {
             background-color: var(--paper-bg);
             background-image: url('https://www.transparenttextures.com/patterns/natural-paper.png');
-            /* 更新字體：優先使用 Meiryo UI */
             font-family: "Meiryo UI", "Meiryo", "PingFang TC", "Microsoft JhengHei", sans-serif;
             color: #2c2c2c; margin: 0; line-height: 2.2;
         }
@@ -27,37 +26,37 @@
 
         #content { max-width: 700px; margin: 60px auto; padding: 0 20px; text-align: left; }
 
-        .msg { margin-bottom: 45px; text-align: left; opacity: 0; animation: fadeIn 0.5s forwards; }
+        .msg { margin-bottom: 40px; text-align: left; opacity: 0; animation: fadeIn 0.5s forwards; }
         @keyframes fadeIn { to { opacity: 1; } }
 
-        /* 對白樣式：無外框，文字變色，字體放大 */
-        .speech-text {
+        /* 統一字體大小：對白與描述一致 */
+        .speech-text, .narrative {
+            font-size: 1.15em; 
             display: block;
-            margin: 10px 0;
-            font-size: 1.25em; /* 略微再放大，增加閱讀舒適度 */
-            font-weight: 500;
+            margin: 8px 0;
+            font-style: normal;
             white-space: pre-wrap;
             letter-spacing: 0.8px;
         }
 
-        /* 動作描述：咖啡色，正體 */
+        /* 預設描述顏色 */
         .narrative {
             color: var(--action-color);
-            display: block;
-            margin: 8px 0;
             font-weight: 400;
-            font-size: 1em;
-            font-style: normal;
         }
 
-        /* 尹昀晞角色色彩同步 */
-        .role-user .speech-text { color: var(--user-accent); }
-        .role-user .narrative { color: var(--user-accent); opacity: 0.85; }
+        /* 其他角色對話：整段染色 */
+        .role-others .speech-text { font-weight: 500; }
+
+        /* 尹昀晞專屬：僅對白變色 */
+        .role-user .speech-text { color: var(--user-accent); font-weight: 500; }
+        /* 尹昀晞動作：維持咖啡色，不跟著變緋紅 */
+        .role-user .narrative { color: var(--action-color); opacity: 0.9; }
 
         /* 環境描述 */
         .role-system { 
             color: #b0a496; 
-            font-size: 0.95em; 
+            font-size: 1em; 
             text-align: center;
             margin: 80px 0; 
             display: block;
@@ -148,11 +147,13 @@
             if (seg.match(narrativeRegex)) {
                 const cleanNarrative = seg.replace(/[\*\(\)]/g, '').trim();
                 if (cleanNarrative) {
-                    html += `<span class="narrative" style="color: ${isUser ? 'var(--user-accent)' : ''}">${cleanNarrative}</span>`;
+                    // 規則：無論是誰，動作描述皆維持咖啡色 (action-color)
+                    html += `<span class="narrative">${cleanNarrative}</span>`;
                 }
             } else {
                 const cleanSpeech = seg.trim();
                 if (cleanSpeech) {
+                    // 規則：僅無符號包覆的對話才變色 (尹昀晞緋紅 / 其他人專屬色)
                     html += `<div class="speech-text" style="color: ${roleColor}">${cleanSpeech}</div>`;
                 }
             }
