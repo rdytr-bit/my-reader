@@ -39,25 +39,13 @@
             padding: 12px 20px; display: none; justify-content: space-between; align-items: center; z-index: 100;
         }
 
-        /* 主角設定樣式 */
-        .player-setting {
-            margin-bottom: 20px;
-            font-size: 0.9em;
-            color: #8b7d6b;
-        }
-        .player-setting input {
-            border: none; border-bottom: 1px solid #e0d8cc; background: transparent;
-            padding: 4px 8px; color: var(--user-accent); font-weight: bold; text-align: center;
-            width: 100px; outline: none;
-        }
-
         #docTitle { font-size: 1.1em; font-weight: bold; color: #555; margin-right: auto; margin-left: 15px; }
 
         #welcome-screen {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             height: 90vh; text-align: center; padding: 20px;
         }
-        #welcome-text { color: #8b7d6b; margin-bottom: 30px; letter-spacing: 2px; font-size: 0.95em; }
+        #welcome-text { color: #8b7d6b; margin-bottom: 50px; letter-spacing: 2px; font-size: 0.95em; }
 
         #bookshelf { margin-top: 50px; width: 100%; max-width: 320px; text-align: left; }
         .shelf-title { font-size: 0.85em; color: #b0a496; border-bottom: 1px solid #e0d8cc; padding-bottom: 8px; margin-bottom: 15px; letter-spacing: 1px; text-align: center; }
@@ -101,7 +89,7 @@
 </head>
 <body>
 
-<div id="resume-modal" style="display:none;">
+<div id="resume-modal">
     <div class="modal-content">
         <p style="margin-bottom: 25px; color: #555; line-height: 1.6;">偵測到上次的閱讀進度，<br>要從那裡開始嗎？</p>
         <button id="confirm-resume" class="btn-red" style="margin-bottom: 15px; width: 100%;">繼續閱讀</button><br>
@@ -112,16 +100,11 @@
 <div id="welcome-screen" class="fade-in">
     <div id="welcome-text">「那些未曾忘卻的私語，都在這裡。」</div>
     
-    <!-- 方案 B：主角設定欄位 -->
-    <div class="player-setting">
-        我是 <input type="text" id="playerNameInput" value="尹昀晞" placeholder="輸入主角名">
-    </div>
-
-    <label for="fileInput" class="btn-red">尋找他的蹤跡</label>
+    <label for="fileInput" class="btn-red">開啟對話書簡</label>
     <input type="file" id="fileInput" accept=".txt">
 
     <div id="bookshelf" style="display: none;">
-        <div class="shelf-title">續寫我們的故事</div>
+        <div class="shelf-title">往日回憶</div>
         <div id="book-list"></div>
     </div>
 </div>
@@ -143,9 +126,9 @@
     const bookList = document.getElementById('book-list');
     const bookshelf = document.getElementById('bookshelf');
     const resumeModal = document.getElementById('resume-modal');
-    const playerNameInput = document.getElementById('playerNameInput');
 
     let currentPerson = "";
+    let autoDetectedPlayer = ""; 
     let roleColors = {};
     const colorPalette = ['#5d8aa8', '#4e6e5d', '#5a4a78', '#8b5a2b', '#3d5a80', '#6d597a'];
 
@@ -160,8 +143,9 @@
         const reader = new FileReader();
         reader.onload = (ev) => {
             const rawData = ev.target.result;
-            // 自動嘗試預測主角名 (若輸入框為空)
-            predictPlayerName(rawData);
+            // 步驟 1: 先掃描第一筆資料自動辨識主角名
+            autoDetectPlayer(rawData);
+            // 步驟 2: 開始渲染
             render(rawData);
             saveToHistory(currentPerson);
             welcomeScreen.classList.add('fade-out');
@@ -173,10 +157,12 @@
         reader.readAsText(file);
     });
 
-    function predictPlayerName(text) {
-        if (!playerNameInput.value.trim()) {
-            const firstMatch = text.match(/^\s*(.*?):\s*/);
-            if (firstMatch) playerNameInput.value = firstMatch[1].trim();
+    function autoDetectPlayer(text) {
+        // 搜尋第一個出現的名字 (格式: Name:)
+        const firstMatch = text.match(/^\s*(.*?):\s*/m);
+        if (firstMatch) {
+            autoDetectedPlayer = firstMatch[1].trim();
+            console.log("自動偵測主角:", autoDetectedPlayer);
         }
     }
 
@@ -212,7 +198,7 @@
     document.getElementById('cancel-resume').onclick = () => resumeModal.style.display = 'none';
 
     document.getElementById('backToLibrary').onclick = () => {
-        location.reload(); // 重新整理以重置狀態
+        location.reload(); 
     };
 
     function switchToReadMode() {
@@ -221,23 +207,22 @@
         content.style.display = 'block';
     }
 
-    // 智慧段落篩選邏輯：針對 --- 或 獨立星號 進行評分
+    // 智慧段落篩選：分析 --- 分隔後的區塊，找出最有可能是人話的部分
     function getCleanMessage(rawMsg) {
-        // 分割符：--- 或 換行後獨立出現的 *
-        const chunks = rawMsg.split(/---|\n\s*\*\s*\n/g).map(c => c.trim()).filter(c => c.length > 0);
-        if (chunks.length === 1) return chunks[0];
+        const chunks = rawMsg.split(/---|(?:\n|^)\s*\*\s*(?:\n|$)/g).map(c => c.trim()).filter(c => c.length > 0);
+        if (chunks.length <= 1) return chunks[0] || "";
 
         let bestChunk = chunks[0];
         let maxScore = -1;
 
         chunks.forEach(chunk => {
             let score = 0;
-            // 特徵評分
             if (chunk.includes('「') || chunk.includes('」')) score += 50;
             if (chunk.includes('*')) score += 30;
-            score += chunk.length * 0.5; // 長度加分
-
-            // 系統文字扣分 (偵測常見系統特徵如 [ ] 或 HP:)
+            score += chunk.length * 0.4; 
+            
+            // 扣分項：如果是純數字或含系統關鍵字
+            if (/^[\d\s\W]+$/.test(chunk)) score -= 60;
             if (/\[.*?\]|HP:|Status:|Lv\./i.test(chunk)) score -= 40;
 
             if (score > maxScore) {
@@ -251,20 +236,20 @@
     function render(rawText) {
         content.innerHTML = '';
         roleColors = {};
-        const currentPlayer = playerNameInput.value.trim() || "尹昀晞";
         
+        // 分割時間戳區塊
         const blocks = rawText.split(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]/g);
         blocks.forEach(fullContent => {
             if (!fullContent.trim()) return;
+            
             const match = fullContent.match(/^\s*(.*?):\s*([\s\S]*)$/);
             if (match) {
                 const name = match[1].trim();
                 let rawMsg = match[2].trim();
                 
-                // 執行智慧段落過濾
                 rawMsg = getCleanMessage(rawMsg);
 
-                const isUser = name.includes(currentPlayer);
+                const isUser = (name === autoDetectedPlayer);
                 const isSystem = /system|environment/i.test(name);
                 const div = document.createElement('div');
                 div.className = 'msg';
@@ -298,23 +283,19 @@
     }
 
     function processText(text, roleColor, isUser) {
-        // 第一層：優先拆分星號包裹內容 (*...*)
         const segments = text.split(/(\*[\s\S]*?\*)/g);
         
         return segments.map(seg => {
             if (!seg || !seg.trim()) return '';
             
             if (seg.startsWith('*') && seg.endsWith('*')) {
-                // 咖啡色旁白：移除星號，保留內部的引號
                 const cleanText = seg.replace(/^\*|\*$/g, '').replace(/[\(\)]/g, '').trim(); 
                 return `<span class="narrative">${cleanText}</span>`;
             }
 
             if (isUser) {
-                // 主角：非星號皆為代表色對話
                 return `<div class="speech-text" style="color: ${roleColor}">${seg.trim()}</div>`;
             } else {
-                // 他人：僅引號內為代表色對話
                 const subSegments = seg.split(/(「[\s\S]*?」)/g);
                 return subSegments.map(sub => {
                     if (!sub || !sub.trim()) return '';
