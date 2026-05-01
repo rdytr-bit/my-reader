@@ -8,7 +8,7 @@
         :root {
             --paper-bg: #fdfaf5;
             --user-accent: #a63d40; /* 尹昀晞：緋紅色 */
-            --action-color: #8b7d6b; /* 咖啡色 */
+            --action-color: #8b7d6b; /* 動作描述：咖啡色 */
         }
 
         body {
@@ -24,60 +24,44 @@
             padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 100;
         }
 
-        #content { max-width: 700px; margin: 50px auto; padding: 0 20px; text-align: left; }
+        #content { max-width: 700px; margin: 60px auto; padding: 0 20px; text-align: left; }
 
-        .msg { margin-bottom: 40px; text-align: left; opacity: 0; animation: fadeIn 0.5s forwards; }
+        .msg { margin-bottom: 45px; text-align: left; opacity: 0; animation: fadeIn 0.5s forwards; }
         @keyframes fadeIn { to { opacity: 1; } }
 
-        /* 對話框樣式 */
-        .speech-bubble {
-            padding: 12px 20px;
-            border-radius: 8px;
-            display: inline-block;
-            margin: 8px 0;
-            border: 1px solid transparent;
+        /* 純文字對話樣式：無外框，字體略大 */
+        .speech-text {
+            display: block;
+            margin: 10px 0;
+            font-size: 1.2em; /* 對白放大 */
+            font-weight: 500;
             white-space: pre-wrap;
-            max-width: 92%;
-            font-size: 1.1em;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.02);
+            letter-spacing: 0.5px;
         }
 
-        /* 尹昀晞樣式 */
-        .role-user .speech-bubble { 
-            border-color: var(--user-accent); 
-            background: rgba(166, 61, 64, 0.04); 
-        }
-
-        /* 其他角色樣式 */
-        .role-others .speech-bubble {
-            border: 1px solid currentColor;
-            background: rgba(0, 0, 0, 0.02);
-        }
-
-        /* 動作描述 */
+        /* 動作/心理描述：正體，咖啡色，字體標準 */
         .narrative {
             color: var(--action-color);
-            font-style: italic;
             display: block;
-            margin: 12px 0;
+            margin: 8px 0;
             font-weight: 400;
             font-size: 1em;
+            font-style: normal; /* 規則 1：取消斜體 */
         }
 
-        /* 系統/環境描述修正：不再顯示名稱，並美化格式 */
+        /* 尹昀晞專屬色彩 */
+        .role-user .speech-text { color: var(--user-accent); }
+        .role-user .narrative { color: var(--user-accent); opacity: 0.85; }
+
+        /* 系統/環境描述 */
         .role-system { 
             color: #b0a496; 
             font-size: 0.95em; 
             text-align: center;
             margin: 80px 0; 
-            font-style: normal;
             display: block;
-            position: relative;
         }
-        .role-system::before, .role-system::after {
-            content: " ——— ";
-            opacity: 0.5;
-        }
+        .role-system::before, .role-system::after { content: " ——— "; opacity: 0.5; }
 
         #scrollBtn { background: var(--user-accent); color: white; border: none; padding: 6px 15px; border-radius: 20px; cursor: pointer; }
     </style>
@@ -116,7 +100,6 @@
     function render(rawText, fileKey) {
         content.innerHTML = '';
         roleColors = {}; 
-        // 依照時間戳切分
         const blocks = rawText.split(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]/g);
         
         blocks.forEach(fullContent => {
@@ -133,11 +116,9 @@
                 const isSystem = /system|environment/i.test(name);
                 
                 if (isSystem) {
-                    // 修正：將系統訊息內容獨立呈現，不帶對話框
                     div.classList.add('role-system');
                     div.innerText = rawMsg.replace(/[\*\(\)]/g, '').trim(); 
                 } else {
-                    // 規則：尹昀晞對話中的「---」過濾
                     if (isUser && rawMsg.includes('---')) {
                         const parts = rawMsg.split('---');
                         rawMsg = parts[parts.length - 1].trim(); 
@@ -146,12 +127,8 @@
                     const roleColor = getRoleColor(name);
                     div.classList.add(isUser ? 'role-user' : 'role-others');
                     
-                    const processedHTML = processText(rawMsg);
-                    div.innerHTML = `
-                        <div class="msg-body" style="color: ${isUser ? 'inherit' : roleColor}">
-                            ${processedHTML}
-                        </div>
-                    `;
+                    const processedHTML = processText(rawMsg, roleColor, isUser);
+                    div.innerHTML = `<div class="msg-body">${processedHTML}</div>`;
                 }
                 content.appendChild(div);
             }
@@ -160,7 +137,7 @@
         window.onscroll = () => localStorage.setItem('pos_' + fileKey, window.scrollY);
     }
 
-    function processText(text) {
+    function processText(text, roleColor, isUser) {
         const narrativeRegex = /(\*.*?\*|\(.*?\))/g;
         const segments = text.split(narrativeRegex);
         let html = '';
@@ -170,12 +147,14 @@
             if (seg.match(narrativeRegex)) {
                 const cleanNarrative = seg.replace(/[\*\(\)]/g, '').trim();
                 if (cleanNarrative) {
-                    html += `<span class="narrative">${cleanNarrative}</span>`;
+                    // 規則 1: 取消斜體；規則 3: 尹昀晞動作也要變色
+                    html += `<span class="narrative" style="color: ${isUser ? 'var(--user-accent)' : ''}">${cleanNarrative}</span>`;
                 }
             } else {
                 const cleanSpeech = seg.trim();
                 if (cleanSpeech) {
-                    html += `<div class="speech-bubble">${cleanSpeech}</div>`;
+                    // 規則 2 & 4: 無外框，對白放大，文字變色
+                    html += `<div class="speech-text" style="color: ${roleColor}">${cleanSpeech}</div>`;
                 }
             }
         });
