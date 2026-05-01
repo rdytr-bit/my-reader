@@ -238,7 +238,8 @@
                     if (isUser && rawMsg.includes('---')) rawMsg = rawMsg.split('---').pop().trim();
                     const roleColor = isUser ? 'var(--user-accent)' : getRoleColor(name);
                     div.classList.add(isUser ? 'role-user' : 'role-others');
-                    div.innerHTML = processText(rawMsg, roleColor);
+                    // 關鍵修改：傳遞 isUser 狀態進行分流處理
+                    div.innerHTML = processText(rawMsg, roleColor, isUser);
                 }
                 content.appendChild(div);
             }
@@ -261,24 +262,32 @@
         return roleColors[name];
     }
 
-    function processText(text, roleColor) {
-        // 分割優先順序：
-        // 1. 任何包含星號的內容 (如 *文字* 或 *(文字)*) -> 強制歸類咖啡色
-        // 2. 引號內容 「」 -> 角色色
-        // 3. 括號內容 () -> 角色色 (因為星號規則在前，這裡只會抓到不帶星號的單純括號)
-        const segments = text.split(/(\*[\s\S]*?\*|「[\s\S]*?」|\([\s\S]*?\))/g);
+    function processText(text, roleColor, isUser) {
+        // 使用正則表達式切割出所有潛在的星號區塊或引號區塊
+        const segments = text.split(/(\*[\s\S]*?\*|「[\s\S]*?」)/g);
         
         return segments.map(seg => {
             if (!seg || !seg.trim()) return '';
             
-            // 只要區段中包含星號，即視為旁白動作
-            if (seg.includes('*')) {
-                // 清理掉所有標籤符號，維持畫面簡潔
-                return `<span class="narrative">${seg.replace(/[\*\(\)]/g, '').trim()}</span>`;
+            if (isUser) {
+                // 【尹昀晞邏輯】：排除法
+                if (seg.includes('*')) {
+                    // 只要有星號，就是旁白
+                    return `<span class="narrative">${seg.replace(/[\*\(\)]/g, '').trim()}</span>`;
+                } else {
+                    // 沒星號包裹的純文字就是對話
+                    return `<div class="speech-text" style="color: ${roleColor}">${seg.trim()}</div>`;
+                }
+            } else {
+                // 【其他角色邏輯】：提取法
+                if (seg.startsWith('「') && seg.endsWith('」')) {
+                    // 只有被引號包住的才是對話，顯示時去掉引號
+                    return `<div class="speech-text" style="color: ${roleColor}">${seg.slice(1, -1).trim()}</div>`;
+                } else {
+                    // 包含星號的內容，以及「不在引號內」的所有純文字，通通視為動作旁白
+                    return `<span class="narrative">${seg.replace(/[\*\(\)]/g, '').trim()}</span>`;
+                }
             }
-            
-            // 引號、單純括號、或完全沒標籤的文字 -> 使用角色代表色
-            return `<div class="speech-text" style="color: ${roleColor}">${seg.trim()}</div>`;
         }).join('');
     }
 </script>
