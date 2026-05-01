@@ -7,8 +7,8 @@
     <style>
         :root {
             --paper-bg: #fdfaf5;
-            --user-accent: #a63d40;
-            --action-color: #8b7d6b;
+            --user-accent: #a63d40; /* 尹昀晞：緋紅色 */
+            --action-color: #8b7d6b; /* 動作描述：咖啡色 */
         }
 
         body {
@@ -32,39 +32,43 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             height: 90vh; text-align: center; padding: 20px;
         }
-        #welcome-text { color: #8b7d6b; margin-bottom: 25px; letter-spacing: 2px; font-size: 0.95em; }
+        #welcome-text { color: #8b7d6b; margin-bottom: 30px; letter-spacing: 2px; font-size: 0.95em; }
 
-        #bookshelf { margin-top: 40px; width: 100%; max-width: 320px; text-align: left; }
-        .shelf-title { font-size: 0.85em; color: #b0a496; border-bottom: 1px solid #e0d8cc; padding-bottom: 5px; margin-bottom: 15px; letter-spacing: 1px; }
+        #bookshelf { margin-top: 50px; width: 100%; max-width: 320px; text-align: left; }
+        .shelf-title { font-size: 0.85em; color: #b0a496; border-bottom: 1px solid #e0d8cc; padding-bottom: 8px; margin-bottom: 15px; letter-spacing: 1px; text-align: center; }
         .book-item {
-            padding: 12px 15px; background: rgba(255,255,255,0.5); border: 1px solid #e0d8cc;
-            border-radius: 10px; margin-bottom: 12px; cursor: pointer; transition: 0.2s;
+            padding: 12px 15px; background: rgba(255,255,255,0.4); border: 1px solid #e0d8cc;
+            border-radius: 12px; margin-bottom: 12px; cursor: pointer; transition: 0.3s;
             display: flex; justify-content: space-between; align-items: center;
         }
-        .book-item:hover { background: #fff; border-color: var(--user-accent); transform: scale(1.02); }
+        .book-item:hover { background: #fff; border-color: var(--user-accent); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .book-item span { font-weight: bold; color: #555; }
+        .book-item small { color: #b0a496; font-size: 0.75em; }
 
-        /* 彈出視窗樣式 */
+        /* 彈出視窗 */
         #resume-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.4); z-index: 200; justify-content: center; align-items: center;
+            backdrop-filter: blur(2px);
         }
         .modal-content {
-            background: var(--paper-bg); padding: 30px; border-radius: 20px; text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 300px;
+            background: var(--paper-bg); padding: 35px 30px; border-radius: 24px; text-align: center;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15); max-width: 280px;
         }
 
         /* 統一按鈕 */
         .btn-red {
             background: var(--user-accent); color: white; border: none;
-            padding: 10px 25px; border-radius: 25px; cursor: pointer;
-            font-size: 1em; display: inline-block; transition: 0.3s;
+            padding: 10px 28px; border-radius: 25px; cursor: pointer;
+            font-size: 1em; display: inline-block; transition: 0.3s; letter-spacing: 1px;
         }
-        .btn-red:hover { opacity: 0.9; }
+        .btn-red:hover { opacity: 0.9; transform: translateY(-1px); }
         #fileInput { display: none; }
 
         /* 閱讀區 */
         #content { max-width: 700px; margin: 40px auto; padding: 0 20px; display: none; }
-        .msg { margin-bottom: 40px; }
+        .msg { margin-bottom: 45px; opacity: 0; animation: fadeIn 0.6s forwards; }
+        @keyframes fadeIn { to { opacity: 1; } }
 
         /* 全文字 1em */
         .speech-text, .narrative, .role-system {
@@ -73,34 +77,36 @@
         }
         .narrative { color: var(--action-color); font-weight: 400; }
         .role-user .speech-text { color: var(--user-accent); font-weight: 500; }
-        .role-system { color: #b0a496; text-align: center; margin: 80px 0; }
+        .role-others .speech-text { font-weight: 500; }
+        .role-system { color: #b0a496; text-align: center; margin: 90px 0; letter-spacing: 2px; }
+        .role-system::before, .role-system::after { content: " ——— "; opacity: 0.4; }
     </style>
 </head>
 <body>
 
 <div id="resume-modal">
     <div class="modal-content">
-        <p style="margin-bottom: 20px; color: #555;">偵測到上次的閱讀進度，<br>要從那裡開始嗎？</p>
-        <button id="confirm-resume" class="btn-red" style="margin-right: 10px;">繼續</button>
-        <button id="cancel-resume" style="background:none; border:none; color:#b0a496; cursor:pointer;">從頭開始</button>
+        <p style="margin-bottom: 25px; color: #555; line-height: 1.6;">偵測到上次的閱讀進度，<br>要從那裡開始嗎？</p>
+        <button id="confirm-resume" class="btn-red" style="margin-bottom: 15px; width: 100%;">繼續閱讀</button><br>
+        <button id="cancel-resume" style="background:none; border:none; color:#b0a496; cursor:pointer; font-size: 0.9em;">從頭開始</button>
     </div>
 </div>
 
 <div id="welcome-screen">
-    <div id="welcome-text">請選擇要閱讀的聊天紀錄</div>
-    <label for="fileInput" class="btn-red">選擇檔案</label>
+    <div id="welcome-text">「那些未曾忘卻的私語，都在這裡。」</div>
+    <label for="fileInput" class="btn-red">尋找他的蹤跡</label>
     <input type="file" id="fileInput" accept=".txt">
 
     <div id="bookshelf" style="display: none;">
-        <div class="shelf-title">書櫃</div>
+        <div class="shelf-title">續寫我們的故事</div>
         <div id="book-list"></div>
     </div>
 </div>
 
 <div id="header">
-    <button id="backToLibrary" class="btn-red" style="padding: 6px 15px; font-size: 0.85em;">回書房</button>
+    <button id="backToLibrary" class="btn-red" style="padding: 6px 16px; font-size: 0.85em;">回書房</button>
     <span id="docTitle"></span>
-    <div style="width: 70px;"></div> <!-- 保持標題置中 -->
+    <div style="width: 75px;"></div>
 </div>
 
 <div id="content"></div>
@@ -161,7 +167,7 @@
 
     function checkResume() {
         const savedPos = localStorage.getItem('pos_' + currentPerson);
-        if (savedPos && parseInt(savedPos) > 100) {
+        if (savedPos && parseInt(savedPos) > 150) {
             resumeModal.style.display = 'flex';
         }
     }
@@ -177,6 +183,7 @@
     };
 
     document.getElementById('backToLibrary').onclick = () => {
+        window.scrollTo(0, 0);
         welcomeScreen.style.display = 'flex';
         header.style.display = 'none';
         content.style.display = 'none';
@@ -192,7 +199,6 @@
     function render(rawText) {
         content.innerHTML = '';
         roleColors = {};
-        // 分割訊息並保留舊在上的順序
         const blocks = rawText.split(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]/g);
         
         blocks.forEach(fullContent => {
@@ -213,14 +219,16 @@
                 } else {
                     if (isUser && rawMsg.includes('---')) rawMsg = rawMsg.split('---').pop().trim();
                     const roleColor = isUser ? 'var(--user-accent)' : getRoleColor(name);
+                    div.classList.add(isUser ? 'role-user' : 'role-others');
                     div.innerHTML = processText(rawMsg, roleColor, isUser);
                 }
                 content.appendChild(div);
             }
         });
-        // 監聽滾動存檔（以人名為 Key）
         window.onscroll = () => {
-            if (currentPerson) localStorage.setItem('pos_' + currentPerson, window.scrollY);
+            if (currentPerson && content.style.display === 'block') {
+                localStorage.setItem('pos_' + currentPerson, window.scrollY);
+            }
         };
     }
 
