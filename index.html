@@ -39,25 +39,13 @@
             padding: 12px 20px; display: none; justify-content: space-between; align-items: center; z-index: 100;
         }
 
-        /* 主角設定樣式 */
-        .player-setting {
-            margin-bottom: 20px;
-            font-size: 0.9em;
-            color: #8b7d6b;
-        }
-        .player-setting input {
-            border: none; border-bottom: 1px solid #e0d8cc; background: transparent;
-            padding: 4px 8px; color: var(--user-accent); font-weight: bold; text-align: center;
-            width: 100px; outline: none;
-        }
-
         #docTitle { font-size: 1.1em; font-weight: bold; color: #555; margin-right: auto; margin-left: 15px; }
 
         #welcome-screen {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             height: 90vh; text-align: center; padding: 20px;
         }
-        #welcome-text { color: #8b7d6b; margin-bottom: 50px; letter-spacing: 2px; font-size: 0.95em; }
+        #welcome-text { color: #8b7d6b; margin-bottom: 30px; letter-spacing: 2px; font-size: 0.95em; }
 
         #bookshelf { margin-top: 50px; width: 100%; max-width: 320px; text-align: left; }
         .shelf-title { font-size: 0.85em; color: #b0a496; border-bottom: 1px solid #e0d8cc; padding-bottom: 8px; margin-bottom: 15px; letter-spacing: 1px; text-align: center; }
@@ -70,14 +58,17 @@
 
         #resume-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); z-index: 200; justify-content: center; align-items: center;
-            backdrop-filter: blur(2px);
+            background: rgba(0,0,0,0); z-index: 200; justify-content: center; align-items: center;
+            backdrop-filter: blur(0px); transition: all 0.4s;
         }
+        #resume-modal.active { background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); }
         
         .modal-content {
             background: var(--paper-bg); padding: 35px 30px; border-radius: 24px; text-align: center;
             box-shadow: 0 15px 40px rgba(0,0,0,0.15); max-width: 280px;
+            transform: scale(0.8); opacity: 0; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
+        #resume-modal.active .modal-content { transform: scale(1); opacity: 1; }
 
         .btn-red {
             background: var(--user-accent); color: white; border: none;
@@ -111,7 +102,6 @@
 
 <div id="welcome-screen" class="fade-in">
     <div id="welcome-text">「那些未曾忘卻的私語，都在這裡。」</div>
-    
     <label for="fileInput" class="btn-red">尋找他的蹤跡</label>
     <input type="file" id="fileInput" accept=".txt">
 
@@ -140,7 +130,6 @@
     const resumeModal = document.getElementById('resume-modal');
 
     let currentPerson = "";
-    let autoDetectedPlayer = ""; 
     let roleColors = {};
     const colorPalette = ['#5d8aa8', '#4e6e5d', '#5a4a78', '#8b5a2b', '#3d5a80', '#6d597a'];
 
@@ -154,12 +143,9 @@
 
         const reader = new FileReader();
         reader.onload = (ev) => {
-            const rawData = ev.target.result;
-            // 步驟 1: 先掃描第一筆資料自動辨識主角名
-            autoDetectPlayer(rawData);
-            // 步驟 2: 開始渲染
-            render(rawData);
+            render(ev.target.result);
             saveToHistory(currentPerson);
+            welcomeScreen.classList.remove('fade-in');
             welcomeScreen.classList.add('fade-out');
             setTimeout(() => {
                 switchToReadMode();
@@ -168,15 +154,6 @@
         };
         reader.readAsText(file);
     });
-
-    function autoDetectPlayer(text) {
-        // 搜尋第一個出現的名字 (格式: Name:)
-        const firstMatch = text.match(/^\s*(.*?):\s*/m);
-        if (firstMatch) {
-            autoDetectedPlayer = firstMatch[1].trim();
-            console.log("自動偵測主角:", autoDetectedPlayer);
-        }
-    }
 
     function updateBookshelf() {
         let history = JSON.parse(localStorage.getItem('library_history') || '{}');
@@ -198,78 +175,67 @@
         const savedPos = localStorage.getItem('pos_' + currentPerson);
         if (savedPos && parseInt(savedPos) > 150) {
             resumeModal.style.display = 'flex';
+            setTimeout(() => resumeModal.classList.add('active'), 10);
         }
     }
 
     document.getElementById('confirm-resume').onclick = () => {
         const savedPos = localStorage.getItem('pos_' + currentPerson);
         window.scrollTo({ top: parseInt(savedPos), behavior: 'smooth' });
-        resumeModal.style.display = 'none';
+        closeModal();
     };
 
-    document.getElementById('cancel-resume').onclick = () => resumeModal.style.display = 'none';
+    document.getElementById('cancel-resume').onclick = closeModal;
+
+    function closeModal() {
+        resumeModal.classList.remove('active');
+        setTimeout(() => resumeModal.style.display = 'none', 400);
+    }
 
     document.getElementById('backToLibrary').onclick = () => {
-        location.reload(); 
+        content.classList.remove('fade-in');
+        content.classList.add('fade-out');
+        header.classList.add('fade-out');
+        setTimeout(() => {
+            window.scrollTo(0, 0);
+            welcomeScreen.style.display = 'flex';
+            welcomeScreen.classList.remove('fade-out');
+            welcomeScreen.classList.add('fade-in');
+            header.style.display = 'none';
+            header.classList.remove('fade-out');
+            content.style.display = 'none';
+            content.classList.remove('fade-out');
+            updateBookshelf();
+        }, 500);
     };
 
     function switchToReadMode() {
         welcomeScreen.style.display = 'none';
         header.style.display = 'flex';
+        header.classList.add('fade-in');
         content.style.display = 'block';
-    }
-
-    // 智慧段落篩選：分析 --- 分隔後的區塊，找出最有可能是人話的部分
-    function getCleanMessage(rawMsg) {
-        const chunks = rawMsg.split(/---|(?:\n|^)\s*\*\s*(?:\n|$)/g).map(c => c.trim()).filter(c => c.length > 0);
-        if (chunks.length <= 1) return chunks[0] || "";
-
-        let bestChunk = chunks[0];
-        let maxScore = -1;
-
-        chunks.forEach(chunk => {
-            let score = 0;
-            if (chunk.includes('「') || chunk.includes('」')) score += 50;
-            if (chunk.includes('*')) score += 30;
-            score += chunk.length * 0.4; 
-            
-            // 扣分項：如果是純數字或含系統關鍵字
-            if (/^[\d\s\W]+$/.test(chunk)) score -= 60;
-            if (/\[.*?\]|HP:|Status:|Lv\./i.test(chunk)) score -= 40;
-
-            if (score > maxScore) {
-                maxScore = score;
-                bestChunk = chunk;
-            }
-        });
-        return bestChunk;
+        content.classList.add('fade-in');
     }
 
     function render(rawText) {
         content.innerHTML = '';
         roleColors = {};
-        
-        // 分割時間戳區塊
         const blocks = rawText.split(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]/g);
         blocks.forEach(fullContent => {
             if (!fullContent.trim()) return;
-            
             const match = fullContent.match(/^\s*(.*?):\s*([\s\S]*)$/);
             if (match) {
                 const name = match[1].trim();
                 let rawMsg = match[2].trim();
-                
-                rawMsg = getCleanMessage(rawMsg);
-
-                const isUser = (name === autoDetectedPlayer);
+                const isUser = name.includes('尹昀晞');
                 const isSystem = /system|environment/i.test(name);
                 const div = document.createElement('div');
                 div.className = 'msg';
-                
                 if (isSystem) {
                     div.className = 'role-system';
                     div.innerText = rawMsg.replace(/[\*\(\)]/g, '').trim(); 
                 } else {
+                    if (isUser && rawMsg.includes('---')) rawMsg = rawMsg.split('---').pop().trim();
                     const roleColor = isUser ? 'var(--user-accent)' : getRoleColor(name);
                     div.classList.add(isUser ? 'role-user' : 'role-others');
                     div.innerHTML = processText(rawMsg, roleColor, isUser);
@@ -277,9 +243,10 @@
                 content.appendChild(div);
             }
         });
-
         window.onscroll = () => {
-            if (currentPerson) localStorage.setItem('pos_' + currentPerson, window.scrollY);
+            if (currentPerson && content.style.display === 'block') {
+                localStorage.setItem('pos_' + currentPerson, window.scrollY);
+            }
         };
     }
 
@@ -295,25 +262,34 @@
     }
 
     function processText(text, roleColor, isUser) {
+        // 第一層：優先拆分出所有被星號包裹的區塊 (*...*)
         const segments = text.split(/(\*[\s\S]*?\*)/g);
         
         return segments.map(seg => {
             if (!seg || !seg.trim()) return '';
             
+            // 判定 A：若是被星號包裹的內容（包含星號內嵌的引號）
             if (seg.startsWith('*') && seg.endsWith('*')) {
+                // 移除外層星號與內嵌括號，內容維持咖啡色
                 const cleanText = seg.replace(/^\*|\*$/g, '').replace(/[\(\)]/g, '').trim(); 
                 return `<span class="narrative">${cleanText}</span>`;
             }
 
+            // 判定 B：如果是沒被星號包裹的區塊
             if (isUser) {
+                // 【尹昀晞】：其餘純文字皆為代表色對話
                 return `<div class="speech-text" style="color: ${roleColor}">${seg.trim()}</div>`;
             } else {
+                // 【其他角色】：需再拆分出「」包裹的對話
                 const subSegments = seg.split(/(「[\s\S]*?」)/g);
                 return subSegments.map(sub => {
                     if (!sub || !sub.trim()) return '';
+                    
                     if (sub.startsWith('「') && sub.endsWith('」')) {
+                        // 僅有引號內為代表色，並移除顯示時的引號
                         return `<div class="speech-text" style="color: ${roleColor}">${sub.slice(1, -1).trim()}</div>`;
                     } else {
+                        // 引號外的純文字皆為咖啡色旁白
                         return `<span class="narrative">${sub.trim()}</span>`;
                     }
                 }).join('');
