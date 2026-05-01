@@ -7,7 +7,7 @@
     <style>
         :root {
             --paper-bg: #fdfaf5;
-            --user-accent: #a63d40; /* 尹昀晞現在是緋紅色 */
+            --user-accent: #a63d40; /* 尹昀晞：緋紅色 */
             --action-color: #8b7d6b; /* 咖啡色 */
         }
 
@@ -15,7 +15,7 @@
             background-color: var(--paper-bg);
             background-image: url('https://www.transparenttextures.com/patterns/natural-paper.png');
             font-family: "PingFang TC", "Noto Serif TC", "Microsoft JhengHei", serif;
-            color: #2c2c2c; margin: 0; line-height: 1.8;
+            color: #2c2c2c; margin: 0; line-height: 2;
         }
 
         #header {
@@ -24,48 +24,54 @@
             padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 100;
         }
 
-        #content { max-width: 700px; margin: 30px auto; padding: 0 20px; text-align: left; }
+        #content { max-width: 700px; margin: 50px auto; padding: 0 20px; text-align: left; }
 
-        .msg { margin-bottom: 45px; text-align: left; opacity: 0; animation: fadeIn 0.5s forwards; }
+        .msg { margin-bottom: 35px; text-align: left; opacity: 0; animation: fadeIn 0.5s forwards; }
         @keyframes fadeIn { to { opacity: 1; } }
 
-        .meta { font-size: 11px; color: #b0a496; margin-bottom: 12px; display: block; }
-        .name { font-weight: bold; font-size: 1.15em; display: block; margin-bottom: 8px; }
-
-        /* 對話框樣式 */
+        /* 對話框樣式：不再顯示名稱與時間 */
         .speech-bubble {
-            padding: 10px 16px;
-            border-radius: 6px;
+            padding: 12px 20px;
+            border-radius: 8px;
             display: inline-block;
-            margin: 4px 0;
+            margin: 5px 0;
             border: 1px solid transparent;
             white-space: pre-wrap;
-            max-width: 90%;
+            max-width: 92%;
+            font-size: 1.1em;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.02);
         }
 
-        /* 尹昀晞專屬：緋紅框 */
-        .role-user .name { color: var(--user-accent); }
+        /* 尹昀晞：緋紅框 */
         .role-user .speech-bubble { 
             border-color: var(--user-accent); 
             background: rgba(166, 61, 64, 0.04); 
         }
 
-        /* 其他角色通用框：預設水藍色調起頭 */
+        /* 其他角色：邊框顏色由程式動態賦予 */
         .role-others .speech-bubble {
-            border: 1px solid currentColor; /* 自動抓取名字顏色 */
+            border: 1px solid currentColor;
             background: rgba(0, 0, 0, 0.02);
         }
 
+        /* 動作描述 */
         .narrative {
             color: var(--action-color);
             font-style: italic;
             display: block;
-            margin: 6px 0;
+            margin: 10px 0;
             font-weight: 400;
-            font-size: 0.98em;
+            font-size: 1em;
         }
 
-        .role-system { color: #8c8c8c; font-size: 0.9em; border-left: 2px solid #ddd; padding-left: 15px; margin: 30px 0; }
+        /* 系統環境描述：更淡化 */
+        .role-system { 
+            color: #b0a496; 
+            font-size: 0.9em; 
+            text-align: center;
+            margin: 60px 0; 
+            letter-spacing: 2px;
+        }
 
         #scrollBtn { background: var(--user-accent); color: white; border: none; padding: 6px 15px; border-radius: 20px; cursor: pointer; }
     </style>
@@ -74,7 +80,7 @@
 
 <div id="header">
     <input type="file" id="fileInput" accept=".txt">
-    <button id="scrollBtn" style="display:none;">續讀位置</button>
+    <button id="scrollBtn" style="display:none;">續讀</button>
 </div>
 
 <div id="content"></div>
@@ -82,7 +88,6 @@
 <script>
     const fileInput = document.getElementById('fileInput');
     const content = document.getElementById('content');
-    // 其他角色的調色盤，從水藍色開始
     const colorPalette = ['#5d8aa8', '#4e6e5d', '#5a4a78', '#8b5a2b', '#3d5a80', '#6d597a'];
     let roleColors = {};
 
@@ -105,43 +110,46 @@
     function render(rawText, fileKey) {
         content.innerHTML = '';
         roleColors = {}; 
-        const blocks = rawText.split(/(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\])/g);
+        // 匹配時間點格式進行切分，但後續不再顯示它
+        const blocks = rawText.split(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]/g);
         
-        for (let i = 1; i < blocks.length; i += 2) {
-            const time = blocks[i];
-            const fullContent = blocks[i + 1] || "";
+        blocks.forEach(fullContent => {
+            if (!fullContent.trim()) return;
+
             const match = fullContent.match(/^\s*(.*?):\s*([\s\S]*)$/);
-            
             const div = document.createElement('div');
             div.className = 'msg';
 
             if (match) {
                 const name = match[1].trim();
-                const rawMsg = match[2].trim();
+                let rawMsg = match[2].trim();
                 const isUser = name.includes('尹昀晞');
                 const isSystem = /system|environment/i.test(name);
                 
                 if (isSystem) {
                     div.classList.add('role-system');
-                    div.innerHTML = `<span class="meta">${time}</span><strong>${name}</strong><br>${rawMsg}`;
+                    div.innerHTML = `〈 ${rawMsg} 〉`;
                 } else {
-                    const roleColor = getRoleColor(name);
-                    if (isUser) {
-                        div.classList.add('role-user');
-                    } else {
-                        div.classList.add('role-others');
+                    // 規則 3：尹昀晞對話中的「---」過濾
+                    if (isUser && rawMsg.includes('---')) {
+                        const parts = rawMsg.split('---');
+                        rawMsg = parts[parts.length - 1].trim(); 
                     }
+
+                    const roleColor = getRoleColor(name);
+                    div.classList.add(isUser ? 'role-user' : 'role-others');
                     
                     const processedHTML = processText(rawMsg);
+                    // 規則 2：移除名字顯示，僅靠 msg-body 的邊框顏色辨識
                     div.innerHTML = `
-                        <span class="meta">${time}</span>
-                        <span class="name" style="color: ${roleColor}">${name}</span>
-                        <div class="msg-body" style="color: ${isUser ? 'inherit' : roleColor}">${processedHTML}</div>
+                        <div class="msg-body" style="color: ${isUser ? 'inherit' : roleColor}">
+                            ${processedHTML}
+                        </div>
                     `;
                 }
+                content.appendChild(div);
             }
-            content.appendChild(div);
-        }
+        });
         document.getElementById('scrollBtn').style.display = 'inline-block';
         window.onscroll = () => localStorage.setItem('pos_' + fileKey, window.scrollY);
     }
@@ -154,6 +162,7 @@
         segments.forEach(seg => {
             if (!seg) return;
             if (seg.match(narrativeRegex)) {
+                // 規則：自動去除星號與括弧符號
                 const cleanNarrative = seg.replace(/[\*\(\)]/g, '').trim();
                 if (cleanNarrative) {
                     html += `<span class="narrative">${cleanNarrative}</span>`;
