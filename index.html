@@ -22,16 +22,8 @@
 
         .fade-in { animation: fadeIn var(--transition-speed) ease-out forwards; }
         .fade-out { animation: fadeOut var(--transition-speed) ease-in forwards; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.98); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        @keyframes fadeOut {
-            from { opacity: 1; transform: scale(1); }
-            to { opacity: 0; transform: scale(1.02); }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        @keyframes fadeOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.02); } }
 
         #header {
             position: sticky; top: 0; background: rgba(253, 250, 245, 0.95);
@@ -45,27 +37,6 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             height: 90vh; text-align: center; padding: 20px;
         }
-        #welcome-text { color: #8b7d6b; margin-bottom: 50px; letter-spacing: 2px; font-size: 0.95em; }
-
-        #bookshelf { margin-top: 50px; width: 100%; max-width: 320px; text-align: left; }
-        .shelf-title { font-size: 0.85em; color: #b0a496; border-bottom: 1px solid #e0d8cc; padding-bottom: 8px; margin-bottom: 15px; letter-spacing: 1px; text-align: center; }
-        .book-item {
-            padding: 12px 15px; background: rgba(255,255,255,0.4); border: 1px solid #e0d8cc;
-            border-radius: 12px; margin-bottom: 12px; cursor: pointer; transition: 0.3s;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .book-item:hover { background: #fff; border-color: var(--user-accent); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-
-        #resume-modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); z-index: 200; justify-content: center; align-items: center;
-            backdrop-filter: blur(2px);
-        }
-        
-        .modal-content {
-            background: var(--paper-bg); padding: 35px 30px; border-radius: 24px; text-align: center;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.15); max-width: 280px;
-        }
 
         .btn-red {
             background: var(--user-accent); color: white; border: none;
@@ -73,38 +44,44 @@
             font-size: 1em; display: inline-block; transition: 0.3s; letter-spacing: 1px;
         }
         .btn-red:hover { opacity: 0.9; transform: translateY(-1px); }
-        #fileInput { display: none; }
+
+        #bookshelf { margin-top: 50px; width: 100%; max-width: 320px; }
+        .book-item {
+            padding: 12px 15px; background: rgba(255,255,255,0.4); border: 1px solid #e0d8cc;
+            border-radius: 12px; margin-bottom: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+        }
 
         #content { max-width: 700px; margin: 40px auto; padding: 0 20px; display: none; }
         .msg { margin-bottom: 45px; }
-
         .speech-text, .narrative, .role-system { font-size: 1em; display: block; margin: 8px 0; white-space: pre-wrap; letter-spacing: 0.8px; }
         .narrative { color: var(--action-color); font-weight: 400; }
         .role-user .speech-text { color: var(--user-accent); font-weight: 500; }
         .role-others .speech-text { font-weight: 500; }
-        
         .role-system { color: #b0a496; text-align: center; margin: 90px 0; letter-spacing: 2px; }
-        .role-system::before, .role-system::after { content: " ——— "; opacity: 0.4; }
+
+        #resume-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); z-index: 200; justify-content: center; align-items: center;
+            backdrop-filter: blur(2px);
+        }
+        .modal-content { background: var(--paper-bg); padding: 35px; border-radius: 24px; text-align: center; max-width: 280px; }
     </style>
 </head>
 <body>
 
 <div id="resume-modal">
     <div class="modal-content">
-        <p style="margin-bottom: 25px; color: #555; line-height: 1.6;">偵測到上次的閱讀進度，<br>要從那裡開始嗎？</p>
-        <button id="confirm-resume" class="btn-red" style="margin-bottom: 15px; width: 100%;">繼續閱讀</button><br>
-        <button id="cancel-resume" style="background:none; border:none; color:#b0a496; cursor:pointer; font-size: 0.9em;">從頭開始</button>
+        <p style="margin-bottom: 25px; color: #555;">偵測到上次的閱讀進度，<br>要從那裡開始嗎？</p>
+        <button id="confirm-resume" class="btn-red" style="margin-bottom: 15px; width: 100%;">繼續閱讀</button>
+        <button id="cancel-resume" style="background:none; border:none; color:#b0a496; cursor:pointer;">從頭開始</button>
     </div>
 </div>
 
 <div id="welcome-screen" class="fade-in">
-    <div id="welcome-text">「那些未曾忘卻的私語，都在這裡。」</div>
-    
+    <div style="color: #8b7d6b; margin-bottom: 50px; letter-spacing: 2px;">「那些未曾忘卻的私語，都在這裡。」</div>
     <label for="fileInput" class="btn-red">尋找他的蹤跡</label>
     <input type="file" id="fileInput" accept=".txt">
-
     <div id="bookshelf" style="display: none;">
-        <div class="shelf-title">續寫我們的故事</div>
         <div id="book-list"></div>
     </div>
 </div>
@@ -132,14 +109,11 @@
     let roleColors = {};
     const colorPalette = ['#5d8aa8', '#4e6e5d', '#5a4a78', '#8b5a2b', '#3d5a80', '#6d597a'];
 
-    window.onload = updateBookshelf;
-
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
         currentPerson = file.name.split('_')[0];
         docTitle.innerText = currentPerson;
-
         const reader = new FileReader();
         reader.onload = (ev) => {
             const rawData = ev.target.result;
@@ -147,93 +121,64 @@
             render(rawData);
             saveToHistory(currentPerson);
             welcomeScreen.classList.add('fade-out');
-            setTimeout(() => {
-                switchToReadMode();
-                checkResume();
-            }, 500);
+            setTimeout(() => { switchToReadMode(); checkResume(); }, 500);
         };
         reader.readAsText(file);
     });
 
     function autoDetectPlayer(text) {
         const firstMatch = text.match(/^\s*(.*?):\s*/m);
-        if (firstMatch) {
-            autoDetectedPlayer = firstMatch[1].trim();
-        }
-    }
-
-    function updateBookshelf() {
-        let history = JSON.parse(localStorage.getItem('library_history') || '{}');
-        const names = Object.keys(history);
-        if (names.length > 0) {
-            bookshelf.style.display = 'block';
-            bookList.innerHTML = '';
-            names.reverse().forEach(name => {
-                const div = document.createElement('div');
-                div.className = 'book-item';
-                div.innerHTML = `<span>${name}</span><small>${history[name].lastRead}</small>`;
-                div.onclick = () => fileInput.click();
-                bookList.appendChild(div);
-            });
-        }
-    }
-
-    function checkResume() {
-        const savedPos = localStorage.getItem('pos_' + currentPerson);
-        if (savedPos && parseInt(savedPos) > 150) {
-            resumeModal.style.display = 'flex';
-        }
-    }
-
-    document.getElementById('confirm-resume').onclick = () => {
-        const savedPos = localStorage.getItem('pos_' + currentPerson);
-        window.scrollTo({ top: parseInt(savedPos), behavior: 'smooth' });
-        resumeModal.style.display = 'none';
-    };
-
-    document.getElementById('cancel-resume').onclick = () => resumeModal.style.display = 'none';
-
-    document.getElementById('backToLibrary').onclick = () => {
-        location.reload(); 
-    };
-
-    function switchToReadMode() {
-        welcomeScreen.style.display = 'none';
-        header.style.display = 'flex';
-        content.style.display = 'block';
+        if (firstMatch) autoDetectedPlayer = firstMatch[1].trim();
     }
 
     /**
-     * 智慧過濾核心修改：以「對話/旁白特徵」為絕對權重
+     * 智慧計分過濾器 2.0 - 非文字依賴型
      */
     function getCleanMessage(rawMsg) {
-        // 分隔符：--- 或 獨立一行的 *
-        const chunks = rawMsg.split(/---|(?:\n|^)\s*\*\s*(?:\n|$)/g).map(c => c.trim()).filter(c => c.length > 0);
+        // 分隔符：標準分隔線、連續星號或獨立一行星號
+        const chunks = rawMsg.split(/\*{3,}|-{3,}|(?:\n|^)\s*\*\s*(?:\n|$)/g).map(c => c.trim()).filter(c => c.length > 5);
         if (chunks.length <= 1) return chunks[0] || "";
 
         let bestChunk = chunks[0];
-        let maxScore = -1;
+        let maxScore = -1000;
 
         chunks.forEach(chunk => {
             let score = 0;
-            
-            // 1. 引號特徵（最高加分）：對話標誌
-            if (chunk.includes('「') && chunk.includes('」')) {
-                score += 100;
-            }
-            
-            // 2. 星號結構（次高加分）：旁白標誌
-            // 檢測是否含有包裹形式的 *...*
-            if (/\*[\s\S]*?\*/.test(chunk)) {
-                score += 80;
-            }
+            const lines = chunk.split('\n').map(l => l.trim()).filter(l => l);
+            if (lines.length === 0) return;
 
-            // 3. 長度加分：核心內容通常不會太短
-            score += Math.min(chunk.length * 0.2, 50); 
+            // --- 扣分項：結構雜訊 ---
+            // 1. 冒號密度 (標籤式排版)
+            let colonLines = lines.filter(l => l.includes('：') || (l.includes(':') && !l.includes('http'))).length;
+            if (colonLines / lines.length > 0.5) score -= 200;
 
-            // 4. 懲罰項：排除純符號或系統特徵
-            if (/^[\d\s\W:_]+$/.test(chunk)) score -= 150; // 純數字符號區塊
-            if (/\[.*?\]|HP:|Status:|Lv\.|系統/.test(chunk)) score -= 100; // 系統關鍵字
+            // 2. 行首重複符號 (清單化排版：×, ‣, >, -, 1.)
+            let listStartLines = lines.filter(l => /^[^a-zA-Z0-9\u4e00-\u9fa5]/.test(l)).length;
+            if (listStartLines / lines.length > 0.6) score -= 150;
+
+            // 3. 數據格式偵測 (日期、時間)
+            if (/\d{2,4}[\/\-]\d{1,2}[\/\-]\d{1,2}/.test(chunk)) score -= 100;
+            if (/\d{2}:\d{2}/.test(chunk)) score -= 50;
+
+            // --- 加分項：文學特徵 ---
+            // 1. 文學標點 (引號與旁白符號)
+            if (/「.*?」/.test(chunk)) score += 300;
+            if (/\*.*?\*/.test(chunk)) score += 200;
+
+            // 2. 核心人稱與語法 (妳、我、他、她)
+            const personaMatch = chunk.match(/[你妳我他她]/g);
+            if (personaMatch) score += Math.min(personaMatch.length * 20, 150);
+
+            // 3. 語助詞 (對話靈魂)
+            const particleMatch = chunk.match(/[吧呢嗎啊喔啦呀]/g);
+            if (particleMatch) score += Math.min(particleMatch.length * 15, 100);
+
+            // 4. 動詞密度描述 (動作特徵)
+            const actionMatch = chunk.match(/(著|了|看|走|說|聽|笑|握|推)/g);
+            if (actionMatch) score += Math.min(actionMatch.length * 5, 80);
+
+            // 5. 字數與段落連貫性
+            if (chunk.length > 50) score += 50;
 
             if (score > maxScore) {
                 maxScore = score;
@@ -247,17 +192,14 @@
     function render(rawText) {
         content.innerHTML = '';
         roleColors = {};
-        
         const blocks = rawText.split(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]/g);
+        
         blocks.forEach(fullContent => {
             if (!fullContent.trim()) return;
-            
             const match = fullContent.match(/^\s*(.*?):\s*([\s\S]*)$/);
             if (match) {
                 const name = match[1].trim();
                 let rawMsg = match[2].trim();
-                
-                // 套用智慧過濾
                 rawMsg = getCleanMessage(rawMsg);
 
                 const isUser = (name === autoDetectedPlayer);
@@ -276,10 +218,45 @@
                 content.appendChild(div);
             }
         });
+    }
 
-        window.onscroll = () => {
-            if (currentPerson) localStorage.setItem('pos_' + currentPerson, window.scrollY);
-        };
+    function processText(text, roleColor, isUser) {
+        // 先嘗試用星號切分旁白與對話
+        let segments = text.split(/(\*[\s\S]*?\*)/g);
+        
+        // 如果完全沒有星號且沒有引號 (如方別序案例)，則視為混合段落處理
+        if (segments.length === 1 && !text.includes('「')) {
+            return `<span class="narrative">${text.trim()}</span>`;
+        }
+
+        return segments.map(seg => {
+            if (!seg || !seg.trim()) return '';
+            
+            // 星號包裹的內容 (旁白)
+            if (seg.startsWith('*') && seg.endsWith('*')) {
+                return `<span class="narrative">${seg.replace(/^\*|\*$/g, '').trim()}</span>`;
+            }
+
+            // 非星號內容 (可能是對話或無符號旁白)
+            const subSegments = seg.split(/(「[\s\S]*?」)/g);
+            return subSegments.map(sub => {
+                if (!sub || !sub.trim()) return '';
+                if (sub.startsWith('「') && sub.endsWith('」')) {
+                    return `<div class="speech-text" style="color: ${roleColor}">${sub.slice(1, -1).trim()}</div>`;
+                } else {
+                    // 這裡處理那些「沒被包裹但單獨成行」的疑似對話（通常字數短且有語助詞）
+                    if (sub.length < 30 && /[吧呢嗎啊喔啦呀]/.test(sub)) {
+                        return `<div class="speech-text" style="color: ${roleColor}">${sub.trim()}</div>`;
+                    }
+                    return `<span class="narrative">${sub.trim()}</span>`;
+                }
+            }).join('');
+        }).join('');
+    }
+
+    function getRoleColor(name) {
+        if (!roleColors[name]) roleColors[name] = colorPalette[Object.keys(roleColors).length % colorPalette.length];
+        return roleColors[name];
     }
 
     function saveToHistory(name) {
@@ -288,38 +265,24 @@
         localStorage.setItem('library_history', JSON.stringify(history));
     }
 
-    function getRoleColor(name) {
-        if (!roleColors[name]) roleColors[name] = colorPalette[Object.keys(roleColors).length % colorPalette.length];
-        return roleColors[name];
+    function switchToReadMode() {
+        welcomeScreen.style.display = 'none';
+        header.style.display = 'flex';
+        content.style.display = 'block';
     }
 
-    function processText(text, roleColor, isUser) {
-        // 先處理星號包裹內容
-        const segments = text.split(/(\*[\s\S]*?\*)/g);
-        
-        return segments.map(seg => {
-            if (!seg || !seg.trim()) return '';
-            
-            if (seg.startsWith('*') && seg.endsWith('*')) {
-                const cleanText = seg.replace(/^\*|\*$/g, '').replace(/[\(\)]/g, '').trim(); 
-                return `<span class="narrative">${cleanText}</span>`;
-            }
-
-            if (isUser) {
-                return `<div class="speech-text" style="color: ${roleColor}">${seg.trim()}</div>`;
-            } else {
-                const subSegments = seg.split(/(「[\s\S]*?」)/g);
-                return subSegments.map(sub => {
-                    if (!sub || !sub.trim()) return '';
-                    if (sub.startsWith('「') && sub.endsWith('」')) {
-                        return `<div class="speech-text" style="color: ${roleColor}">${sub.slice(1, -1).trim()}</div>`;
-                    } else {
-                        return `<span class="narrative">${sub.trim()}</span>`;
-                    }
-                }).join('');
-            }
-        }).join('');
+    function checkResume() {
+        const savedPos = localStorage.getItem('pos_' + currentPerson);
+        if (savedPos && parseInt(savedPos) > 150) resumeModal.style.display = 'flex';
     }
+
+    document.getElementById('confirm-resume').onclick = () => {
+        window.scrollTo({ top: parseInt(localStorage.getItem('pos_' + currentPerson)), behavior: 'smooth' });
+        resumeModal.style.display = 'none';
+    };
+    document.getElementById('cancel-resume').onclick = () => resumeModal.style.display = 'none';
+    document.getElementById('backToLibrary').onclick = () => location.reload();
+    window.onscroll = () => { if (currentPerson) localStorage.setItem('pos_' + currentPerson, window.scrollY); };
 </script>
 </body>
 </html>
