@@ -7,8 +7,9 @@
     <style>
         :root {
             --paper-bg: #fdfaf5;
-            --user-accent: #a63d40; /* 尹昀晞：緋紅色 */
-            --action-color: #8b7d6b; /* 動作描述：咖啡色 */
+            --user-accent: #a63d40;
+            --action-color: #8b7d6b;
+            --transition-speed: 0.5s;
         }
 
         body {
@@ -16,6 +17,21 @@
             background-image: url('https://www.transparenttextures.com/patterns/natural-paper.png');
             font-family: "Meiryo UI", "Meiryo", "PingFang TC", "Microsoft JhengHei", sans-serif;
             color: #2c2c2c; margin: 0; line-height: 2.2; min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* 轉場動畫類別 */
+        .fade-in { animation: fadeIn var(--transition-speed) ease-out forwards; }
+        .fade-out { animation: fadeOut var(--transition-speed) ease-in forwards; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(1.02); }
         }
 
         /* 導覽列 */
@@ -30,7 +46,7 @@
         /* 歡迎與書櫃畫面 */
         #welcome-screen {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 90vh; text-align: center; padding: 20px;
+            height: 90vh; text-align: center; padding: 20px; transition: all 0.5s;
         }
         #welcome-text { color: #8b7d6b; margin-bottom: 30px; letter-spacing: 2px; font-size: 0.95em; }
 
@@ -42,19 +58,21 @@
             display: flex; justify-content: space-between; align-items: center;
         }
         .book-item:hover { background: #fff; border-color: var(--user-accent); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .book-item span { font-weight: bold; color: #555; }
-        .book-item small { color: #b0a496; font-size: 0.75em; }
 
-        /* 彈出視窗 */
+        /* 彈出視窗（優化動畫） */
         #resume-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); z-index: 200; justify-content: center; align-items: center;
-            backdrop-filter: blur(2px);
+            background: rgba(0,0,0,0); z-index: 200; justify-content: center; align-items: center;
+            backdrop-filter: blur(0px); transition: all 0.4s;
         }
+        #resume-modal.active { background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); }
+        
         .modal-content {
             background: var(--paper-bg); padding: 35px 30px; border-radius: 24px; text-align: center;
             box-shadow: 0 15px 40px rgba(0,0,0,0.15); max-width: 280px;
+            transform: scale(0.8); opacity: 0; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
+        #resume-modal.active .modal-content { transform: scale(1); opacity: 1; }
 
         /* 統一按鈕 */
         .btn-red {
@@ -67,14 +85,10 @@
 
         /* 閱讀區 */
         #content { max-width: 700px; margin: 40px auto; padding: 0 20px; display: none; }
-        .msg { margin-bottom: 45px; opacity: 0; animation: fadeIn 0.6s forwards; }
-        @keyframes fadeIn { to { opacity: 1; } }
+        .msg { margin-bottom: 45px; }
 
-        /* 全文字 1em */
-        .speech-text, .narrative, .role-system {
-            font-size: 1em; display: block; margin: 8px 0; font-style: normal;
-            white-space: pre-wrap; letter-spacing: 0.8px;
-        }
+        /* 文字樣式 */
+        .speech-text, .narrative, .role-system { font-size: 1em; display: block; margin: 8px 0; white-space: pre-wrap; letter-spacing: 0.8px; }
         .narrative { color: var(--action-color); font-weight: 400; }
         .role-user .speech-text { color: var(--user-accent); font-weight: 500; }
         .role-others .speech-text { font-weight: 500; }
@@ -92,7 +106,7 @@
     </div>
 </div>
 
-<div id="welcome-screen">
+<div id="welcome-screen" class="fade-in">
     <div id="welcome-text">「那些未曾忘卻的私語，都在這裡。」</div>
     <label for="fileInput" class="btn-red">尋找他的蹤跡</label>
     <input type="file" id="fileInput" accept=".txt">
@@ -109,7 +123,7 @@
     <div style="width: 75px;"></div>
 </div>
 
-<div id="content"></div>
+<div id="content" class="fade-in"></div>
 
 <script>
     const fileInput = document.getElementById('fileInput');
@@ -137,17 +151,18 @@
         reader.onload = (ev) => {
             render(ev.target.result);
             saveToHistory(currentPerson);
-            switchToReadMode();
-            checkResume();
+            
+            // 執行轉場
+            welcomeScreen.classList.remove('fade-in');
+            welcomeScreen.classList.add('fade-out');
+            
+            setTimeout(() => {
+                switchToReadMode();
+                checkResume();
+            }, 500);
         };
         reader.readAsText(file);
     });
-
-    function saveToHistory(name) {
-        let history = JSON.parse(localStorage.getItem('library_history') || '{}');
-        history[name] = { lastRead: new Date().toLocaleDateString() };
-        localStorage.setItem('library_history', JSON.stringify(history));
-    }
 
     function updateBookshelf() {
         let history = JSON.parse(localStorage.getItem('library_history') || '{}');
@@ -169,31 +184,47 @@
         const savedPos = localStorage.getItem('pos_' + currentPerson);
         if (savedPos && parseInt(savedPos) > 150) {
             resumeModal.style.display = 'flex';
+            setTimeout(() => resumeModal.classList.add('active'), 10);
         }
     }
 
     document.getElementById('confirm-resume').onclick = () => {
         const savedPos = localStorage.getItem('pos_' + currentPerson);
         window.scrollTo({ top: parseInt(savedPos), behavior: 'smooth' });
-        resumeModal.style.display = 'none';
+        closeModal();
     };
 
-    document.getElementById('cancel-resume').onclick = () => {
-        resumeModal.style.display = 'none';
-    };
+    document.getElementById('cancel-resume').onclick = closeModal;
+
+    function closeModal() {
+        resumeModal.classList.remove('active');
+        setTimeout(() => resumeModal.style.display = 'none', 400);
+    }
 
     document.getElementById('backToLibrary').onclick = () => {
-        window.scrollTo(0, 0);
-        welcomeScreen.style.display = 'flex';
-        header.style.display = 'none';
-        content.style.display = 'none';
-        updateBookshelf();
+        content.classList.remove('fade-in');
+        content.classList.add('fade-out');
+        header.classList.add('fade-out');
+
+        setTimeout(() => {
+            window.scrollTo(0, 0);
+            welcomeScreen.style.display = 'flex';
+            welcomeScreen.classList.remove('fade-out');
+            welcomeScreen.classList.add('fade-in');
+            header.style.display = 'none';
+            header.classList.remove('fade-out');
+            content.style.display = 'none';
+            content.classList.remove('fade-out');
+            updateBookshelf();
+        }, 500);
     };
 
     function switchToReadMode() {
         welcomeScreen.style.display = 'none';
         header.style.display = 'flex';
+        header.classList.add('fade-in');
         content.style.display = 'block';
+        content.classList.add('fade-in');
     }
 
     function render(rawText) {
@@ -209,10 +240,8 @@
                 let rawMsg = match[2].trim();
                 const isUser = name.includes('尹昀晞');
                 const isSystem = /system|environment/i.test(name);
-                
                 const div = document.createElement('div');
                 div.className = 'msg';
-
                 if (isSystem) {
                     div.className = 'role-system';
                     div.innerText = rawMsg.replace(/[\*\(\)]/g, '').trim(); 
@@ -230,6 +259,12 @@
                 localStorage.setItem('pos_' + currentPerson, window.scrollY);
             }
         };
+    }
+
+    function saveToHistory(name) {
+        let history = JSON.parse(localStorage.getItem('library_history') || '{}');
+        history[name] = { lastRead: new Date().toLocaleDateString() };
+        localStorage.setItem('library_history', JSON.stringify(history));
     }
 
     function getRoleColor(name) {
