@@ -9,7 +9,6 @@
             --paper-bg: #fdfaf5;
             --user-accent: #a63d40;
             --action-color: #8b7d6b;
-            --guest-speech: #6a7f93; /* 客串角色顏色：灰藍色 */
             --transition-speed: 0.5s;
         }
 
@@ -21,7 +20,7 @@
             overflow-x: hidden;
         }
 
-        /* 1. 轉場動畫類別 */
+        /* 轉場動畫 */
         .fade-in { animation: fadeIn var(--transition-speed) ease-out forwards; }
         .fade-out { animation: fadeOut var(--transition-speed) ease-in forwards; }
 
@@ -44,7 +43,7 @@
 
         #docTitle { font-size: 1.1em; font-weight: bold; color: #555; margin-right: auto; margin-left: 15px; }
 
-        /* 歡迎與書櫃畫面 */
+        /* 歡迎畫面 */
         #welcome-screen {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             height: 90vh; text-align: center; padding: 20px;
@@ -60,7 +59,7 @@
         }
         .book-item:hover { background: #fff; border-color: var(--user-accent); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
 
-        /* 3. 彈出視窗動畫優化 */
+        /* 彈出視窗 */
         #resume-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0); z-index: 200; justify-content: center; align-items: center;
@@ -87,15 +86,12 @@
         #content { max-width: 700px; margin: 40px auto; padding: 0 20px; display: none; }
         .msg { margin-bottom: 45px; }
 
-        /* 文字樣式 */
+        /* 文字樣式 - 回歸簡潔判斷 */
         .speech-text, .narrative, .role-system { font-size: 1em; display: block; margin: 8px 0; white-space: pre-wrap; letter-spacing: 0.8px; }
         .narrative { color: var(--action-color); font-weight: 400; }
         .role-user .speech-text { color: var(--user-accent); font-weight: 500; }
         .role-others .speech-text { font-weight: 500; }
         
-        /* 客串對話專用顏色 */
-        .guest-text { color: var(--guest-speech) !important; font-weight: 400 !important; }
-
         .role-system { color: #b0a496; text-align: center; margin: 90px 0; letter-spacing: 2px; }
         .role-system::before, .role-system::after { content: " ——— "; opacity: 0.4; }
     </style>
@@ -252,7 +248,7 @@
                     if (isUser && rawMsg.includes('---')) rawMsg = rawMsg.split('---').pop().trim();
                     const roleColor = isUser ? 'var(--user-accent)' : getRoleColor(name);
                     div.classList.add(isUser ? 'role-user' : 'role-others');
-                    div.innerHTML = processText(rawMsg, roleColor, isUser, name);
+                    div.innerHTML = processText(rawMsg, roleColor);
                 }
                 content.appendChild(div);
             }
@@ -275,48 +271,14 @@
         return roleColors[name];
     }
 
-    function processText(text, roleColor, isUser, messageOwner) {
-        // 1. 拆分動作 (旁白) 與 對話
-        const segments = text.split(/(\*.*?\*|\(.*?\)|「.*?」)/g);
-        
+    function processText(text, roleColor) {
+        // 僅拆分動作與對話，不進行複雜的客串判定
+        const segments = text.split(/(\*.*?\*|\(.*?\))/g);
         return segments.map(seg => {
             if (!seg || !seg.trim()) return '';
-            
-            // 如果是動作 (旁白)
             if (seg.startsWith('*') || seg.startsWith('(')) {
                 return `<span class="narrative">${seg.replace(/[\*\(\)]/g, '').trim()}</span>`;
             } 
-            
-            // 如果是引號對話
-            if (seg.startsWith('「')) {
-                const innerText = seg.trim();
-                let isGuest = false;
-
-                // 只有在非用戶(尹昀晞)的對話框內才進行客串檢查
-                if (!isUser) {
-                    const index = text.indexOf(seg);
-                    const prefix = text.substring(Math.max(0, index - 10), index); // 抓取引號前10個字
-                    
-                    // 檢查引號前是否出現他稱，且排除掉陶嶼本人
-                    const guestKeywords = ["女傭", "陶準", "管家", "路人", "僕人", "傭人"];
-                    const speakVerbs = ["說", "道", "問", "喊", "應"];
-                    
-                    const hasGuestName = guestKeywords.some(k => prefix.includes(k));
-                    const hasSpeakVerb = speakVerbs.some(v => prefix.includes(v));
-                    const isOwnerMentioned = prefix.includes(messageOwner.substring(0,2)); // 檢查是否提到陶嶼
-
-                    // 邏輯：引號前有他稱或是動詞，且主詞不是陶嶼本人 -> 判定為客串
-                    if ((hasGuestName || hasSpeakVerb) && !isOwnerMentioned) {
-                        isGuest = true;
-                    }
-                }
-
-                const finalColor = isGuest ? '' : `color: ${roleColor}`;
-                const guestClass = isGuest ? 'guest-text' : '';
-                return `<div class="speech-text ${guestClass}" style="${finalColor}">${innerText}</div>`;
-            }
-
-            // 其他普通文本
             return `<div class="speech-text" style="color: ${roleColor}">${seg.trim()}</div>`;
         }).join('');
     }
