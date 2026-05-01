@@ -272,9 +272,10 @@
     }
 
     function processText(text, roleColor) {
-        // 先將引號內容完整保護起來，不讓內部的括弧被拆解
-        // 使用正則表達式分割：1. 引號對話 2. 引號外的括弧/星號動作 3. 其他文字
-        const segments = text.split(/(「.*?」|\*.*?\*|\(.*?\))/gs);
+        // 更新判斷邏輯：
+        // 1. 優先抓出「引號內容」-> 這些被判定為「說話」(角色色)
+        // 2. 其餘所有內容 (包括 *...*、(...) 以及 沒標籤的文字) -> 判定為「旁白」(咖啡色)
+        const segments = text.split(/(「.*?」)/gs);
         
         return segments.map(seg => {
             if (!seg || !seg.trim()) return '';
@@ -284,13 +285,11 @@
                 return `<div class="speech-text" style="color: ${roleColor}">${seg.trim()}</div>`;
             }
             
-            // 如果是引號外的動作/旁白 -> 使用咖啡色
-            if (seg.startsWith('*') || seg.startsWith('(')) {
-                return `<span class="narrative">${seg.replace(/[\*\(\)]/g, '').trim()}</span>`;
-            } 
-            
-            // 普通對話
-            return `<div class="speech-text" style="color: ${roleColor}">${seg.trim()}</div>`;
+            // 其餘所有文字皆視為旁白/動作描述 -> 使用咖啡色
+            // 我們把那些標籤符號也順便清掉，讓畫面更乾淨
+            const cleanNarrative = seg.replace(/[\*\(\)]/g, '').trim();
+            if (!cleanNarrative) return '';
+            return `<span class="narrative">${cleanNarrative}</span>`;
         }).join('');
     }
 </script>
