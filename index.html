@@ -86,7 +86,7 @@
         #content { max-width: 700px; margin: 40px auto; padding: 0 20px; display: none; }
         .msg { margin-bottom: 45px; }
 
-        /* 文字樣式 - 回歸簡潔判斷 */
+        /* 文字樣式 */
         .speech-text, .narrative, .role-system { font-size: 1em; display: block; margin: 8px 0; white-space: pre-wrap; letter-spacing: 0.8px; }
         .narrative { color: var(--action-color); font-weight: 400; }
         .role-user .speech-text { color: var(--user-accent); font-weight: 500; }
@@ -272,13 +272,24 @@
     }
 
     function processText(text, roleColor) {
-        // 僅拆分動作與對話，不進行複雜的客串判定
-        const segments = text.split(/(\*.*?\*|\(.*?\))/g);
+        // 先將引號內容完整保護起來，不讓內部的括弧被拆解
+        // 使用正則表達式分割：1. 引號對話 2. 引號外的括弧/星號動作 3. 其他文字
+        const segments = text.split(/(「.*?」|\*.*?\*|\(.*?\))/gs);
+        
         return segments.map(seg => {
             if (!seg || !seg.trim()) return '';
+            
+            // 如果是完整的引號對話 -> 保持角色色
+            if (seg.startsWith('「')) {
+                return `<div class="speech-text" style="color: ${roleColor}">${seg.trim()}</div>`;
+            }
+            
+            // 如果是引號外的動作/旁白 -> 使用咖啡色
             if (seg.startsWith('*') || seg.startsWith('(')) {
                 return `<span class="narrative">${seg.replace(/[\*\(\)]/g, '').trim()}</span>`;
             } 
+            
+            // 普通對話
             return `<div class="speech-text" style="color: ${roleColor}">${seg.trim()}</div>`;
         }).join('');
     }
