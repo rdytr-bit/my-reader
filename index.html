@@ -14,7 +14,8 @@
         body {
             background-color: var(--paper-bg);
             background-image: url('https://www.transparenttextures.com/patterns/natural-paper.png');
-            font-family: "PingFang TC", "Noto Serif TC", "Microsoft JhengHei", serif;
+            /* 更新字體：優先使用 Meiryo UI */
+            font-family: "Meiryo UI", "Meiryo", "PingFang TC", "Microsoft JhengHei", sans-serif;
             color: #2c2c2c; margin: 0; line-height: 2.2;
         }
 
@@ -29,31 +30,31 @@
         .msg { margin-bottom: 45px; text-align: left; opacity: 0; animation: fadeIn 0.5s forwards; }
         @keyframes fadeIn { to { opacity: 1; } }
 
-        /* 純文字對話樣式：無外框，字體略大 */
+        /* 對白樣式：無外框，文字變色，字體放大 */
         .speech-text {
             display: block;
             margin: 10px 0;
-            font-size: 1.2em; /* 對白放大 */
+            font-size: 1.25em; /* 略微再放大，增加閱讀舒適度 */
             font-weight: 500;
             white-space: pre-wrap;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
         }
 
-        /* 動作/心理描述：正體，咖啡色，字體標準 */
+        /* 動作描述：咖啡色，正體 */
         .narrative {
             color: var(--action-color);
             display: block;
             margin: 8px 0;
             font-weight: 400;
             font-size: 1em;
-            font-style: normal; /* 規則 1：取消斜體 */
+            font-style: normal;
         }
 
-        /* 尹昀晞專屬色彩 */
+        /* 尹昀晞角色色彩同步 */
         .role-user .speech-text { color: var(--user-accent); }
         .role-user .narrative { color: var(--user-accent); opacity: 0.85; }
 
-        /* 系統/環境描述 */
+        /* 環境描述 */
         .role-system { 
             color: #b0a496; 
             font-size: 0.95em; 
@@ -147,13 +148,11 @@
             if (seg.match(narrativeRegex)) {
                 const cleanNarrative = seg.replace(/[\*\(\)]/g, '').trim();
                 if (cleanNarrative) {
-                    // 規則 1: 取消斜體；規則 3: 尹昀晞動作也要變色
                     html += `<span class="narrative" style="color: ${isUser ? 'var(--user-accent)' : ''}">${cleanNarrative}</span>`;
                 }
             } else {
                 const cleanSpeech = seg.trim();
                 if (cleanSpeech) {
-                    // 規則 2 & 4: 無外框，對白放大，文字變色
                     html += `<div class="speech-text" style="color: ${roleColor}">${cleanSpeech}</div>`;
                 }
             }
