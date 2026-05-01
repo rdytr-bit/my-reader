@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>對話小說閱讀器</title>
+    <title>私人對話書房</title>
     <style>
         :root {
             --paper-bg: #fdfaf5;
@@ -16,116 +16,159 @@
             background-image: url('https://www.transparenttextures.com/patterns/natural-paper.png');
             font-family: "Meiryo UI", "Meiryo", "PingFang TC", "Microsoft JhengHei", sans-serif;
             color: #2c2c2c; margin: 0; line-height: 2.2;
+            min-height: 100vh;
         }
 
+        /* 頂部導覽列 */
         #header {
             position: sticky; top: 0; background: rgba(253, 250, 245, 0.95);
             backdrop-filter: blur(5px); border-bottom: 1px solid #e0d8cc;
-            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 100;
+            padding: 12px 20px; display: none; justify-content: space-between; align-items: center; z-index: 100;
         }
 
-        /* 檔案標題樣式 */
-        #docTitle {
-            font-size: 1.1em;
-            font-weight: bold;
-            color: #555;
-            margin-right: auto;
-            margin-left: 15px;
+        #docTitle { font-size: 1.1em; font-weight: bold; color: #555; margin-right: auto; margin-left: 15px; }
+
+        /* 初始書房模式 */
+        #welcome-screen {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 90vh; text-align: center; padding: 20px;
         }
+        #welcome-text { color: #8b7d6b; margin-bottom: 25px; letter-spacing: 2px; font-size: 0.95em; }
+
+        /* 書櫃樣式 */
+        #bookshelf { margin-top: 40px; width: 100%; max-width: 300px; text-align: left; }
+        .shelf-title { font-size: 0.8em; color: #b0a496; border-bottom: 1px solid #e0d8cc; padding-bottom: 5px; margin-bottom: 15px; letter-spacing: 1px; }
+        .book-item {
+            padding: 10px 15px; background: rgba(0,0,0,0.02); border: 1px solid #e0d8cc;
+            border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: 0.2s;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .book-item:hover { background: rgba(166, 61, 64, 0.05); border-color: var(--user-accent); }
+        .book-item span { font-weight: bold; color: #555; }
+        .book-item small { color: #b0a496; font-size: 0.75em; }
 
         /* 統一按鈕樣式 */
-        .custom-file-upload, #scrollBtn {
-            background: var(--user-accent);
-            color: white;
-            border: none;
-            padding: 8px 18px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.9em;
-            display: inline-block;
-            transition: opacity 0.2s;
-            text-decoration: none;
+        .btn-red {
+            background: var(--user-accent); color: white; border: none;
+            padding: 10px 25px; border-radius: 25px; cursor: pointer;
+            font-size: 1em; display: inline-block; transition: 0.3s;
         }
-        .custom-file-upload:hover, #scrollBtn:hover { opacity: 0.8; }
-        #fileInput { display: none; } /* 隱藏原始醜陋按鈕 */
+        .btn-red:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(166,61,64,0.2); }
+        #fileInput { display: none; }
 
-        #content { max-width: 700px; margin: 60px auto; padding: 0 20px; text-align: left; }
-
-        .msg { margin-bottom: 40px; text-align: left; opacity: 0; animation: fadeIn 0.5s forwards; }
+        /* 閱讀模式內容 */
+        #content { max-width: 700px; margin: 40px auto; padding: 0 20px; display: none; }
+        .msg { margin-bottom: 40px; opacity: 0; animation: fadeIn 0.5s forwards; }
         @keyframes fadeIn { to { opacity: 1; } }
 
-        /* 全文字大小統一為 1em */
+        /* 文字樣式統一 */
         .speech-text, .narrative, .role-system {
-            font-size: 1em; 
-            display: block;
-            margin: 8px 0;
-            font-style: normal;
-            white-space: pre-wrap;
-            letter-spacing: 0.8px;
+            font-size: 1em; display: block; margin: 8px 0; font-style: normal;
+            white-space: pre-wrap; letter-spacing: 0.8px;
         }
-
         .narrative { color: var(--action-color); font-weight: 400; }
         .role-others .speech-text { font-weight: 500; }
         .role-user .speech-text { color: var(--user-accent); font-weight: 500; }
         .role-user .narrative { color: var(--action-color); opacity: 0.9; }
 
-        /* 環境描述 */
-        .role-system { 
-            color: #b0a496; 
-            text-align: center;
-            margin: 80px 0; 
-        }
+        .role-system { color: #b0a496; text-align: center; margin: 80px 0; }
         .role-system::before, .role-system::after { content: " ——— "; opacity: 0.5; }
     </style>
 </head>
 <body>
 
-<div id="header">
-    <label for="fileInput" class="custom-file-upload">選擇檔案</label>
+<!-- 初始畫面 -->
+<div id="welcome-screen">
+    <div id="welcome-text">請選擇要閱讀的聊天紀錄</div>
+    <label for="fileInput" class="btn-red">選擇檔案</label>
     <input type="file" id="fileInput" accept=".txt">
-    <span id="docTitle"></span>
-    <button id="scrollBtn" style="display:none;">續讀</button>
+
+    <div id="bookshelf" style="display: none;">
+        <div class="shelf-title">歷史閱讀書櫃</div>
+        <div id="book-list"></div>
+    </div>
 </div>
 
+<!-- 閱讀頁面 -->
+<div id="header">
+    <label for="fileInput" class="btn-red" style="padding: 6px 15px; font-size: 0.85em;">更換檔案</label>
+    <span id="docTitle"></span>
+    <button id="scrollBtn" class="btn-red" style="padding: 6px 15px; font-size: 0.85em;">續讀</button>
+</div>
 <div id="content"></div>
 
 <script>
     const fileInput = document.getElementById('fileInput');
-    const docTitle = document.getElementById('docTitle');
+    const welcomeScreen = document.getElementById('welcome-screen');
+    const header = document.getElementById('header');
     const content = document.getElementById('content');
+    const docTitle = document.getElementById('docTitle');
+    const scrollBtn = document.getElementById('scrollBtn');
+    const bookList = document.getElementById('book-list');
+    const bookshelf = document.getElementById('bookshelf');
+
     const colorPalette = ['#5d8aa8', '#4e6e5d', '#5a4a78', '#8b5a2b', '#3d5a80', '#6d597a'];
     let roleColors = {};
+    let currentFileKey = "";
+
+    // 頁面載入時檢查書櫃
+    window.onload = updateBookshelf;
 
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
+        processFile(file);
+    });
 
-        // 規則 1：解析檔名中底線前的人名
-        const fileName = file.name;
-        const nameMatch = fileName.split('_')[0];
+    function processFile(file) {
+        currentFileKey = file.name;
+        const nameMatch = currentFileKey.split('_')[0];
         docTitle.innerText = nameMatch;
 
         const reader = new FileReader();
-        reader.onload = (ev) => render(ev.target.result, file.name);
+        reader.onload = (ev) => {
+            render(ev.target.result);
+            saveToHistory(nameMatch, currentFileKey);
+            switchToReadMode();
+        };
         reader.readAsText(file);
-    });
-
-    function getRoleColor(name) {
-        if (name.includes('尹昀晞')) return 'var(--user-accent)';
-        if (!roleColors[name]) {
-            roleColors[name] = colorPalette[Object.keys(roleColors).length % colorPalette.length];
-        }
-        return roleColors[name];
     }
 
-    function render(rawText, fileKey) {
+    function saveToHistory(displayName, fullKey) {
+        let history = JSON.parse(localStorage.getItem('reading_history') || '{}');
+        history[fullKey] = { name: displayName, time: new Date().toLocaleDateString() };
+        localStorage.setItem('reading_history', JSON.stringify(history));
+    }
+
+    function updateBookshelf() {
+        let history = JSON.parse(localStorage.getItem('reading_history') || '{}');
+        const keys = Object.keys(history);
+        if (keys.length > 0) {
+            bookshelf.style.display = 'block';
+            bookList.innerHTML = '';
+            keys.reverse().forEach(key => {
+                const div = document.createElement('div');
+                div.className = 'book-item';
+                div.innerHTML = `<span>${history[key].name}</span><small>${history[key].time}</small>`;
+                div.onclick = () => fileInput.click(); // 提示選擇檔案
+                bookList.appendChild(div);
+            });
+        }
+    }
+
+    function switchToReadMode() {
+        welcomeScreen.style.display = 'none';
+        header.style.display = 'flex';
+        content.style.display = 'block';
+    }
+
+    function render(rawText) {
         content.innerHTML = '';
         roleColors = {}; 
         const blocks = rawText.split(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]/g);
         
         blocks.forEach(fullContent => {
             if (!fullContent.trim()) return;
-
             const match = fullContent.match(/^\s*(.*?):\s*([\s\S]*)$/);
             const div = document.createElement('div');
             div.className = 'msg';
@@ -141,47 +184,40 @@
                     div.innerText = rawMsg.replace(/[\*\(\)]/g, '').trim(); 
                 } else {
                     if (isUser && rawMsg.includes('---')) {
-                        const parts = rawMsg.split('---');
-                        rawMsg = parts[parts.length - 1].trim(); 
+                        rawMsg = rawMsg.split('---').pop().trim();
                     }
-
-                    const roleColor = getRoleColor(name);
+                    const roleColor = isUser ? 'var(--user-accent)' : getRoleColor(name);
                     div.classList.add(isUser ? 'role-user' : 'role-others');
-                    
-                    const processedHTML = processText(rawMsg, roleColor, isUser);
-                    div.innerHTML = `<div class="msg-body">${processedHTML}</div>`;
+                    div.innerHTML = processText(rawMsg, roleColor, isUser);
                 }
                 content.appendChild(div);
             }
         });
-        document.getElementById('scrollBtn').style.display = 'inline-block';
-        window.onscroll = () => localStorage.setItem('pos_' + fileKey, window.scrollY);
+        scrollBtn.style.display = 'inline-block';
+        window.onscroll = () => localStorage.setItem('pos_' + currentFileKey, window.scrollY);
+    }
+
+    function getRoleColor(name) {
+        if (!roleColors[name]) {
+            roleColors[name] = colorPalette[Object.keys(roleColors).length % colorPalette.length];
+        }
+        return roleColors[name];
     }
 
     function processText(text, roleColor, isUser) {
         const narrativeRegex = /(\*.*?\*|\(.*?\))/g;
-        const segments = text.split(narrativeRegex);
-        let html = '';
-
-        segments.forEach(seg => {
-            if (!seg) return;
+        return text.split(narrativeRegex).map(seg => {
+            if (!seg.trim()) return '';
             if (seg.match(narrativeRegex)) {
-                const cleanNarrative = seg.replace(/[\*\(\)]/g, '').trim();
-                if (cleanNarrative) {
-                    html += `<span class="narrative">${cleanNarrative}</span>`;
-                }
+                return `<span class="narrative">${seg.replace(/[\*\(\)]/g, '').trim()}</span>`;
             } else {
-                const cleanSpeech = seg.trim();
-                if (cleanSpeech) {
-                    html += `<div class="speech-text" style="color: ${roleColor}">${cleanSpeech}</div>`;
-                }
+                return `<div class="speech-text" style="color: ${roleColor}">${seg.trim()}</div>`;
             }
-        });
-        return html;
+        }).join('');
     }
 
-    document.getElementById('scrollBtn').onclick = () => {
-        const savedPos = localStorage.getItem('pos_' + fileInput.files[0].name);
+    scrollBtn.onclick = () => {
+        const savedPos = localStorage.getItem('pos_' + currentFileKey);
         if (savedPos) window.scrollTo({ top: parseInt(savedPos), behavior: 'smooth' });
     };
 </script>
