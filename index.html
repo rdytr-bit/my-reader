@@ -143,9 +143,7 @@
         const reader = new FileReader();
         reader.onload = (ev) => {
             const rawData = ev.target.result;
-            // 步驟 1: 先掃描第一筆資料自動辨識主角名
             autoDetectPlayer(rawData);
-            // 步驟 2: 開始渲染
             render(rawData);
             saveToHistory(currentPerson);
             welcomeScreen.classList.add('fade-out');
@@ -158,11 +156,9 @@
     });
 
     function autoDetectPlayer(text) {
-        // 搜尋第一個出現的名字 (格式: Name:)
         const firstMatch = text.match(/^\s*(.*?):\s*/m);
         if (firstMatch) {
             autoDetectedPlayer = firstMatch[1].trim();
-            console.log("自動偵測主角:", autoDetectedPlayer);
         }
     }
 
@@ -207,8 +203,11 @@
         content.style.display = 'block';
     }
 
-    // 智慧段落篩選：分析 --- 分隔後的區塊，找出最有可能是人話的部分
+    /**
+     * 智慧過濾核心修改：以「對話/旁白特徵」為絕對權重
+     */
     function getCleanMessage(rawMsg) {
+        // 分隔符：--- 或 獨立一行的 *
         const chunks = rawMsg.split(/---|(?:\n|^)\s*\*\s*(?:\n|$)/g).map(c => c.trim()).filter(c => c.length > 0);
         if (chunks.length <= 1) return chunks[0] || "";
 
@@ -217,19 +216,31 @@
 
         chunks.forEach(chunk => {
             let score = 0;
-            if (chunk.includes('「') || chunk.includes('」')) score += 50;
-            if (chunk.includes('*')) score += 30;
-            score += chunk.length * 0.4; 
             
-            // 扣分項：如果是純數字或含系統關鍵字
-            if (/^[\d\s\W]+$/.test(chunk)) score -= 60;
-            if (/\[.*?\]|HP:|Status:|Lv\./i.test(chunk)) score -= 40;
+            // 1. 引號特徵（最高加分）：對話標誌
+            if (chunk.includes('「') && chunk.includes('」')) {
+                score += 100;
+            }
+            
+            // 2. 星號結構（次高加分）：旁白標誌
+            // 檢測是否含有包裹形式的 *...*
+            if (/\*[\s\S]*?\*/.test(chunk)) {
+                score += 80;
+            }
+
+            // 3. 長度加分：核心內容通常不會太短
+            score += Math.min(chunk.length * 0.2, 50); 
+
+            // 4. 懲罰項：排除純符號或系統特徵
+            if (/^[\d\s\W:_]+$/.test(chunk)) score -= 150; // 純數字符號區塊
+            if (/\[.*?\]|HP:|Status:|Lv\.|系統/.test(chunk)) score -= 100; // 系統關鍵字
 
             if (score > maxScore) {
                 maxScore = score;
                 bestChunk = chunk;
             }
         });
+        
         return bestChunk;
     }
 
@@ -237,7 +248,6 @@
         content.innerHTML = '';
         roleColors = {};
         
-        // 分割時間戳區塊
         const blocks = rawText.split(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]/g);
         blocks.forEach(fullContent => {
             if (!fullContent.trim()) return;
@@ -247,6 +257,7 @@
                 const name = match[1].trim();
                 let rawMsg = match[2].trim();
                 
+                // 套用智慧過濾
                 rawMsg = getCleanMessage(rawMsg);
 
                 const isUser = (name === autoDetectedPlayer);
@@ -283,6 +294,7 @@
     }
 
     function processText(text, roleColor, isUser) {
+        // 先處理星號包裹內容
         const segments = text.split(/(\*[\s\S]*?\*)/g);
         
         return segments.map(seg => {
