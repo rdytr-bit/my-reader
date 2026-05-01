@@ -3,37 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>聊天存檔閱讀器 - 言理</title>
+    <title>言理與尹昀晞：時光存檔</title>
     <style>
+        /* 和風現代美學定義 */
         :root {
-            --bg-color: #f8f9fa;
-            --text-color: #333;
-            --system-color: #6c757d;
-            --character-bg: #ffffff;
-            --user-bg: #e1f5fe;
+            --paper-bg: #fdfaf5; /* 和紙米色 */
+            --yanli-accent: #a63d40; /* 緋紅 */
+            --yunxi-accent: #5d8aa8; /* 水色 */
+            --system-text: #8c8c8c;
+            --main-text: #2c2c2c;
         }
-        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg-color); margin: 0; color: var(--text-color); }
-        
-        /* 導航列 */
-        #header { position: sticky; top: 0; background: #2c3e50; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        
+
+        body {
+            background-color: var(--paper-bg);
+            background-image: url('https://www.transparenttextures.com/patterns/natural-paper.png'); /* 微細紙張紋理 */
+            font-family: "PingFang TC", "Noto Serif TC", "Microsoft JhengHei", serif;
+            color: var(--main-text);
+            margin: 0;
+            line-height: 2;
+        }
+
+        /* 導覽列美化 */
+        #header {
+            position: sticky;
+            top: 0;
+            background: rgba(253, 250, 245, 0.9);
+            backdrop-filter: blur(5px);
+            border-bottom: 1px solid #e0d8cc;
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        #fileInput {
+            font-size: 14px;
+            color: var(--yanli-accent);
+        }
+
         /* 內容容器 */
-        #content { max-width: 700px; margin: 20px auto; padding: 0 15px; padding-bottom: 50px; }
-        
-        /* 訊息樣式 */
-        .msg { margin-bottom: 25px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); line-height: 1.8; position: relative; }
-        .meta { font-size: 12px; color: #aaa; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px; display: flex; justify-content: space-between; }
-        
-        /* 角色區分 */
-        .role-system { border-left: 5px solid #607d8b; background: #eceff1; font-style: italic; color: #546e7a; }
-        .role-character { border-left: 5px solid #ff5252; background: var(--character-bg); } /* 言理 */
-        .role-user { border-left: 5px solid #2196f3; background: var(--user-bg); } /* 尹昀晞 */
-        
-        .name { font-weight: bold; margin-bottom: 5px; color: #2c3e50; display: block; }
-        .action { color: #78909c; font-size: 0.95em; } /* 星號內的動作描述 */
-        
-        #fileInput { cursor: pointer; }
-        #scrollBtn { background: #ff5252; color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; }
+        #content {
+            max-width: 650px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        /* 訊息區塊 */
+        .msg {
+            margin-bottom: 40px;
+            opacity: 0;
+            transform: translateY(10px);
+            animation: fadeIn 0.8s forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .meta {
+            font-size: 11px;
+            color: #b0a496;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        /* 名稱樣式 */
+        .name {
+            font-weight: 600;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            display: inline-block;
+            padding-bottom: 2px;
+        }
+
+        /* 言理樣式 */
+        .role-character .name { 
+            color: var(--yanli-accent); 
+            border-bottom: 2px solid var(--yanli-accent);
+        }
+        .role-character .text-box {
+            background: rgba(166, 61, 64, 0.03);
+            border-left: 3px solid var(--yanli-accent);
+        }
+
+        /* 尹昀晞樣式 */
+        .role-user .name { 
+            color: var(--yunxi-accent); 
+            border-bottom: 2px solid var(--yunxi-accent);
+        }
+        .role-user .text-box {
+            background: rgba(93, 138, 168, 0.03);
+            border-left: 3px solid var(--yunxi-accent);
+        }
+
+        /* 系統/環境描述 */
+        .role-system {
+            text-align: center;
+            font-size: 0.9em;
+            color: var(--system-text);
+            margin: 50px 0;
+        }
+        .role-system .text-box {
+            background: transparent;
+            font-style: italic;
+        }
+
+        .text-box {
+            padding: 15px 20px;
+            border-radius: 2px;
+            font-size: 1.05em;
+            white-space: pre-wrap;
+        }
+
+        /* 動作描述特殊色 */
+        .action {
+            color: #8b7d6b;
+            font-size: 0.95em;
+            font-weight: 300;
+        }
+
+        #scrollBtn {
+            background: var(--yanli-accent);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: 0.3s;
+        }
+
+        #scrollBtn:hover { opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -41,13 +143,14 @@
 <div id="header">
     <input type="file" id="fileInput" accept=".txt">
     <div id="info">
-        <span id="fileName">請載入檔案</span>
-        <button id="scrollBtn" style="display:none;">跳至上次進度</button>
+        <span id="fileName" style="font-size: 13px; margin-right: 10px;"></span>
+        <button id="scrollBtn" style="display:none;">續讀上次位置</button>
     </div>
 </div>
 
 <div id="content">
-    </div>
+    <!-- 文字將生成於此 -->
+</div>
 
 <script>
     const fileInput = document.getElementById('fileInput');
@@ -70,7 +173,7 @@
 
     function parseAndRender(rawText, fileKey) {
         content.innerHTML = '';
-        // 依照日期時間格式分割訊息
+        // 依照日期時間分割
         const msgBlocks = rawText.split(/(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\])/g);
         
         for (let i = 1; i < msgBlocks.length; i += 2) {
@@ -80,14 +183,13 @@
             const div = document.createElement('div');
             div.className = 'msg';
             
-            // 解析角色名稱與文字
             const match = fullContent.match(/^\s*(.*?):\s*([\s\S]*)$/);
             if (match) {
                 const name = match[1].trim();
                 let text = match[2].trim();
                 
-                // 區分樣式
-                if (name.includes('system') || name.includes('Environment')) {
+                // 角色判斷
+                if (name.toLowerCase().includes('system') || name.toLowerCase().includes('environment')) {
                     div.classList.add('role-system');
                 } else if (name.includes('言理')) {
                     div.classList.add('role-character');
@@ -95,24 +197,21 @@
                     div.classList.add('role-user');
                 }
 
-                // 處理星號動作文字 (變色)
+                // 星號文字處理
                 text = text.replace(/\*(.*?)\*/g, '<span class="action">*$1*</span>');
-                text = text.replace(/\n/g, '<br>');
 
                 div.innerHTML = `
-                    <div class="meta"><span>${time}</span></div>
+                    <div class="meta">${time}</div>
                     <span class="name">${name}</span>
-                    <div class="text">${text}</div>
+                    <div class="text-box">${text}</div>
                 `;
             } else {
-                // 如果格式不符，單純顯示文字
                 div.classList.add('role-system');
-                div.innerText = fullContent;
+                div.innerHTML = `<div class="text-box">${fullContent}</div>`;
             }
             content.appendChild(div);
         }
 
-        // 監聽捲動並存檔
         window.onscroll = function() {
             localStorage.setItem('pos_' + fileKey, window.scrollY);
         };
