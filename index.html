@@ -7,7 +7,7 @@
     <style>
         :root {
             --paper-bg: #fdfaf5;
-            --user-accent: #a63d40; /* 尹昀晞對話：緋紅色 */
+            --user-accent: #a63d40; /* 尹昀晞：緋紅色 */
             --action-color: #8b7d6b; /* 動作描述：咖啡色 */
         }
 
@@ -24,14 +24,39 @@
             padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 100;
         }
 
+        /* 檔案標題樣式 */
+        #docTitle {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #555;
+            margin-right: auto;
+            margin-left: 15px;
+        }
+
+        /* 統一按鈕樣式 */
+        .custom-file-upload, #scrollBtn {
+            background: var(--user-accent);
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            display: inline-block;
+            transition: opacity 0.2s;
+            text-decoration: none;
+        }
+        .custom-file-upload:hover, #scrollBtn:hover { opacity: 0.8; }
+        #fileInput { display: none; } /* 隱藏原始醜陋按鈕 */
+
         #content { max-width: 700px; margin: 60px auto; padding: 0 20px; text-align: left; }
 
         .msg { margin-bottom: 40px; text-align: left; opacity: 0; animation: fadeIn 0.5s forwards; }
         @keyframes fadeIn { to { opacity: 1; } }
 
-        /* 統一字體大小：對白與描述一致 */
-        .speech-text, .narrative {
-            font-size: 1.15em; 
+        /* 全文字大小統一為 1em */
+        .speech-text, .narrative, .role-system {
+            font-size: 1em; 
             display: block;
             margin: 8px 0;
             font-style: normal;
@@ -39,37 +64,26 @@
             letter-spacing: 0.8px;
         }
 
-        /* 預設描述顏色 */
-        .narrative {
-            color: var(--action-color);
-            font-weight: 400;
-        }
-
-        /* 其他角色對話：整段染色 */
+        .narrative { color: var(--action-color); font-weight: 400; }
         .role-others .speech-text { font-weight: 500; }
-
-        /* 尹昀晞專屬：僅對白變色 */
         .role-user .speech-text { color: var(--user-accent); font-weight: 500; }
-        /* 尹昀晞動作：維持咖啡色，不跟著變緋紅 */
         .role-user .narrative { color: var(--action-color); opacity: 0.9; }
 
         /* 環境描述 */
         .role-system { 
             color: #b0a496; 
-            font-size: 1em; 
             text-align: center;
             margin: 80px 0; 
-            display: block;
         }
         .role-system::before, .role-system::after { content: " ——— "; opacity: 0.5; }
-
-        #scrollBtn { background: var(--user-accent); color: white; border: none; padding: 6px 15px; border-radius: 20px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div id="header">
+    <label for="fileInput" class="custom-file-upload">選擇檔案</label>
     <input type="file" id="fileInput" accept=".txt">
+    <span id="docTitle"></span>
     <button id="scrollBtn" style="display:none;">續讀</button>
 </div>
 
@@ -77,6 +91,7 @@
 
 <script>
     const fileInput = document.getElementById('fileInput');
+    const docTitle = document.getElementById('docTitle');
     const content = document.getElementById('content');
     const colorPalette = ['#5d8aa8', '#4e6e5d', '#5a4a78', '#8b5a2b', '#3d5a80', '#6d597a'];
     let roleColors = {};
@@ -84,6 +99,12 @@
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
+
+        // 規則 1：解析檔名中底線前的人名
+        const fileName = file.name;
+        const nameMatch = fileName.split('_')[0];
+        docTitle.innerText = nameMatch;
+
         const reader = new FileReader();
         reader.onload = (ev) => render(ev.target.result, file.name);
         reader.readAsText(file);
@@ -147,13 +168,11 @@
             if (seg.match(narrativeRegex)) {
                 const cleanNarrative = seg.replace(/[\*\(\)]/g, '').trim();
                 if (cleanNarrative) {
-                    // 規則：無論是誰，動作描述皆維持咖啡色 (action-color)
                     html += `<span class="narrative">${cleanNarrative}</span>`;
                 }
             } else {
                 const cleanSpeech = seg.trim();
                 if (cleanSpeech) {
-                    // 規則：僅無符號包覆的對話才變色 (尹昀晞緋紅 / 其他人專屬色)
                     html += `<div class="speech-text" style="color: ${roleColor}">${cleanSpeech}</div>`;
                 }
             }
